@@ -15,9 +15,12 @@ spring:
     bootstrap-servers: localhost:9092
 
 app:
+  outbox:
+    max-retry: 5
   kafka:
     topics:
       order-created: order.created.v1
+      inventory-reservation-failed: inventory.reservation.failed.v1
       payment-authorized: payment.authorized.v1
       payment-failed: payment.failed.v1
 

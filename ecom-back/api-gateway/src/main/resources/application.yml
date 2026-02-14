@@ -36,6 +36,16 @@ spring:
 server:
   port: 8080
 
+app:
+  gateway:
+    api-version:
+      required: v1
+    rate-limit:
+      max-requests: 120
+      window-seconds: 60
+    auth:
+      validate-url: http://localhost:8081/api/auth/validate
+
 management:
   endpoints:
     web:

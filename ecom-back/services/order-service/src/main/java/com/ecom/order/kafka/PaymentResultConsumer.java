@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import com.ecom.common.DomainEvent;
+import com.ecom.order.service.ConsumerDedupService;
 import com.ecom.order.service.OrderUseCases;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,41 +15,56 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class PaymentResultConsumer {
 
     private final OrderUseCases orderService;
+    private final ConsumerDedupService dedupService;
     private final ObjectMapper objectMapper;
 
-    public PaymentResultConsumer(OrderUseCases orderService, ObjectMapper objectMapper) {
+    public PaymentResultConsumer(OrderUseCases orderService, ConsumerDedupService dedupService, ObjectMapper objectMapper) {
         this.orderService = orderService;
+        this.dedupService = dedupService;
         this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = "${app.kafka.topics.payment-authorized:payment.authorized.v1}", groupId = "order-service")
     public void onPaymentAuthorized(String rawEvent) {
-        readOrderId(rawEvent).ifPresent(orderService::markPaymentAuthorized);
+        readEvent(rawEvent).ifPresent(event -> {
+            if (!dedupService.markIfNew(event.eventId() == null ? null : event.eventId().toString())) {
+                return;
+            }
+            readOrderId(event).ifPresent(orderService::markPaymentAuthorized);
+        });
     }
 
     @KafkaListener(topics = "${app.kafka.topics.payment-failed:payment.failed.v1}", groupId = "order-service")
     public void onPaymentFailed(String rawEvent) {
-        readOrderId(rawEvent).ifPresent(orderService::markPaymentFailed);
+        readEvent(rawEvent).ifPresent(event -> {
+            if (!dedupService.markIfNew(event.eventId() == null ? null : event.eventId().toString())) {
+                return;
+            }
+            readOrderId(event).ifPresent(orderService::markPaymentFailed);
+        });
     }
 
-    private java.util.Optional<String> readOrderId(String rawEvent) {
+    private java.util.Optional<DomainEvent<Map<String, Object>>> readEvent(String rawEvent) {
         if (rawEvent == null || rawEvent.isBlank()) {
             return java.util.Optional.empty();
         }
 
         try {
             var typeRef = new TypeReference<DomainEvent<Map<String, Object>>>() {};
-            DomainEvent<Map<String, Object>> event = objectMapper.readValue(rawEvent, typeRef);
-            if (event.payload() == null) {
-                return java.util.Optional.empty();
-            }
-            Object orderIdObj = event.payload().get("orderId");
-            if (orderIdObj == null) {
-                return java.util.Optional.empty();
-            }
-            return java.util.Optional.of(orderIdObj.toString());
+            return java.util.Optional.of(objectMapper.readValue(rawEvent, typeRef));
         } catch (Exception ignored) {
             return java.util.Optional.empty();
         }
+    }
+
+    private java.util.Optional<String> readOrderId(DomainEvent<Map<String, Object>> event) {
+        if (event == null || event.payload() == null) {
+            return java.util.Optional.empty();
+        }
+        Object orderIdObj = event.payload().get("orderId");
+        if (orderIdObj == null) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.of(orderIdObj.toString());
     }
 }

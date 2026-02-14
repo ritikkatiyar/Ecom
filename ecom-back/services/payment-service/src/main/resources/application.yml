@@ -17,6 +17,8 @@ spring:
       group-id: payment-service
 
 app:
+  outbox:
+    max-retry: 5
   payment:
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-webhook-secret}
   kafka:

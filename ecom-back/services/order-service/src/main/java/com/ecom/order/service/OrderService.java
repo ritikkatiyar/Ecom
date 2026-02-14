@@ -4,14 +4,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ecom.common.DomainEvent;
 import com.ecom.order.dto.CreateOrderRequest;
 import com.ecom.order.dto.OrderItemRequest;
 import com.ecom.order.dto.OrderResponse;
@@ -26,17 +23,17 @@ public class OrderService implements OrderUseCases {
 
     private final OrderRepository orderRepository;
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final OutboxService outboxService;
     private final String orderCreatedTopic;
 
     public OrderService(
             OrderRepository orderRepository,
             ObjectMapper objectMapper,
-            KafkaTemplate<String, String> kafkaTemplate,
+            OutboxService outboxService,
             @Value("${app.kafka.topics.order-created:order.created.v1}") String orderCreatedTopic) {
         this.orderRepository = orderRepository;
         this.objectMapper = objectMapper;
-        this.kafkaTemplate = kafkaTemplate;
+        this.outboxService = outboxService;
         this.orderCreatedTopic = orderCreatedTopic;
     }
 
@@ -174,19 +171,6 @@ public class OrderService implements OrderUseCases {
                 payloadItems,
                 Instant.now());
 
-        DomainEvent<OrderCreatedPayload> event = new DomainEvent<>(
-                UUID.randomUUID(),
-                "order.created.v1",
-                Instant.now(),
-                "order-service",
-                "v1",
-                UUID.randomUUID().toString(),
-                payload);
-
-        try {
-            kafkaTemplate.send(orderCreatedTopic, order.getId(), objectMapper.writeValueAsString(event));
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Could not serialize order created event", ex);
-        }
+        outboxService.enqueue(orderCreatedTopic, order.getId(), "order.created.v1", payload, "order-service");
     }
 }

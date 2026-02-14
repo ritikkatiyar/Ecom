@@ -3,6 +3,8 @@ spring:
     name: search-service
   profiles:
     active: es-kafka
+  elasticsearch:
+    uris: http://localhost:9200
   kafka:
     bootstrap-servers: localhost:9092
 
@@ -18,3 +20,13 @@ management:
 
 server:
   port: 8089
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  search:
+    product-service-base-url: http://localhost:8083

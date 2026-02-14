@@ -6,11 +6,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ecom.common.DomainEvent;
 import com.ecom.payment.dto.CreatePaymentIntentRequest;
 import com.ecom.payment.dto.PaymentResponse;
 import com.ecom.payment.dto.PaymentWebhookRequest;
@@ -19,30 +17,25 @@ import com.ecom.payment.entity.PaymentStatus;
 import com.ecom.payment.entity.WebhookEventRecord;
 import com.ecom.payment.repository.PaymentRepository;
 import com.ecom.payment.repository.WebhookEventRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class PaymentService implements PaymentUseCases {
 
     private final PaymentRepository paymentRepository;
     private final WebhookEventRepository webhookEventRepository;
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
+    private final OutboxService outboxService;
     private final String paymentAuthorizedTopic;
     private final String paymentFailedTopic;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             WebhookEventRepository webhookEventRepository,
-            KafkaTemplate<String, String> kafkaTemplate,
-            ObjectMapper objectMapper,
+            OutboxService outboxService,
             @Value("${app.kafka.topics.payment-authorized:payment.authorized.v1}") String paymentAuthorizedTopic,
             @Value("${app.kafka.topics.payment-failed:payment.failed.v1}") String paymentFailedTopic) {
         this.paymentRepository = paymentRepository;
         this.webhookEventRepository = webhookEventRepository;
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = objectMapper;
+        this.outboxService = outboxService;
         this.paymentAuthorizedTopic = paymentAuthorizedTopic;
         this.paymentFailedTopic = paymentFailedTopic;
     }
@@ -135,22 +128,9 @@ public class PaymentService implements PaymentUseCases {
                 reason,
                 Instant.now());
 
-        DomainEvent<PaymentResultPayload> event = new DomainEvent<>(
-                UUID.randomUUID(),
-                "AUTHORIZED".equals(status) ? "payment.authorized.v1" : "payment.failed.v1",
-                Instant.now(),
-                "payment-service",
-                "v1",
-                UUID.randomUUID().toString(),
-                payload);
-
+        String eventType = "AUTHORIZED".equals(status) ? "payment.authorized.v1" : "payment.failed.v1";
         String topic = "AUTHORIZED".equals(status) ? paymentAuthorizedTopic : paymentFailedTopic;
-
-        try {
-            kafkaTemplate.send(topic, record.getOrderId(), objectMapper.writeValueAsString(event));
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Could not serialize payment event", ex);
-        }
+        outboxService.enqueue(topic, record.getOrderId(), eventType, payload, "payment-service");
     }
 
     private PaymentResponse toResponse(PaymentRecord p) {

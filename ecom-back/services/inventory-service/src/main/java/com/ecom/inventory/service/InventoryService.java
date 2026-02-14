@@ -1,6 +1,9 @@
 package com.ecom.inventory.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -144,6 +147,97 @@ public class InventoryService implements InventoryUseCases {
         } finally {
             lockService.release(reservation.getSku());
         }
+    }
+
+    @Override
+    @Transactional
+    public void reserveForOrder(String orderId, List<OrderItemReservation> items, int ttlMinutes) {
+        if (orderId == null || orderId.isBlank()) {
+            throw new IllegalArgumentException("orderId is required");
+        }
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("order items are required");
+        }
+
+        Map<String, Integer> bySku = new java.util.LinkedHashMap<>();
+        for (OrderItemReservation item : items) {
+            if (item == null || item.sku() == null || item.sku().isBlank() || item.quantity() <= 0) {
+                throw new IllegalArgumentException("Invalid order item payload");
+            }
+            bySku.merge(item.sku(), item.quantity(), Integer::sum);
+        }
+
+        List<String> reservedIds = new ArrayList<>();
+        try {
+            for (var entry : bySku.entrySet()) {
+                String reservationId = reservationId(orderId, entry.getKey());
+                ReservationRequest request = new ReservationRequest(reservationId, entry.getKey(), entry.getValue(), ttlMinutes);
+                try {
+                    reserve(request);
+                } catch (IllegalArgumentException ex) {
+                    if (!"Reservation already exists".equals(ex.getMessage())) {
+                        throw ex;
+                    }
+                }
+                reservedIds.add(reservationId);
+            }
+        } catch (Exception ex) {
+            for (String reservationId : reservedIds) {
+                safeRelease(reservationId);
+            }
+            throw ex;
+        }
+    }
+
+    @Override
+    @Transactional
+    public void releaseForOrder(String orderId) {
+        for (InventoryReservation reservation : findOrderReservations(orderId)) {
+            safeRelease(reservation.getReservationId());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void confirmForOrder(String orderId) {
+        for (InventoryReservation reservation : findOrderReservations(orderId)) {
+            safeConfirm(reservation.getReservationId());
+        }
+    }
+
+    private List<InventoryReservation> findOrderReservations(String orderId) {
+        if (orderId == null || orderId.isBlank()) {
+            return List.of();
+        }
+        return reservationRepository.findByReservationIdStartingWith(orderId + ":");
+    }
+
+    private void safeRelease(String reservationId) {
+        var found = reservationRepository.findById(reservationId);
+        if (found.isEmpty()) {
+            return;
+        }
+        String status = found.get().getStatus();
+        if ("RELEASED".equals(status) || "CONFIRMED".equals(status)) {
+            return;
+        }
+        release(new ReservationActionRequest(reservationId));
+    }
+
+    private void safeConfirm(String reservationId) {
+        var found = reservationRepository.findById(reservationId);
+        if (found.isEmpty()) {
+            return;
+        }
+        String status = found.get().getStatus();
+        if ("CONFIRMED".equals(status) || "RELEASED".equals(status)) {
+            return;
+        }
+        confirm(new ReservationActionRequest(reservationId));
+    }
+
+    private String reservationId(String orderId, String sku) {
+        return orderId + ":" + sku;
     }
 
     private StockResponse toResponse(InventoryStock stock) {

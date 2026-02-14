@@ -3,8 +3,29 @@ spring:
     name: notification-service
   profiles:
     active: kafka
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecom_notification?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
   kafka:
     bootstrap-servers: localhost:9092
+  mail:
+    host: localhost
+    port: 1025
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
 management:
   endpoints:
@@ -18,3 +39,17 @@ management:
 
 server:
   port: 8090
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  notification:
+    provider: log
+    max-retry: 3
+  kafka:
+    topics:
+      notification-dlq: notification.dlq.v1

@@ -36,3 +36,16 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+app:
+  outbox:
+    max-retry: 5
+  inventory:
+    reservation-ttl-minutes: 30
+  kafka:
+    topics:
+      order-created: order.created.v1
+      payment-authorized: payment.authorized.v1
+      payment-failed: payment.failed.v1
+      inventory-reserved: inventory.reserved.v1
+      inventory-reservation-failed: inventory.reservation.failed.v1

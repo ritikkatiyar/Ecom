@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.kafka.core.KafkaTemplate;
 
 import com.ecom.payment.dto.CreatePaymentIntentRequest;
 import com.ecom.payment.dto.PaymentWebhookRequest;
@@ -21,7 +20,6 @@ import com.ecom.payment.entity.PaymentRecord;
 import com.ecom.payment.entity.PaymentStatus;
 import com.ecom.payment.repository.PaymentRepository;
 import com.ecom.payment.repository.WebhookEventRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -33,14 +31,13 @@ class PaymentServiceTest {
     private WebhookEventRepository webhookEventRepository;
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private OutboxService outboxService;
 
     @InjectMocks
     private PaymentService paymentService = new PaymentService(
             paymentRepository,
             webhookEventRepository,
-            kafkaTemplate,
-            new ObjectMapper(),
+            outboxService,
             "payment.authorized.v1",
             "payment.failed.v1");
 

@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import com.ecom.common.DomainEvent;
+import com.ecom.payment.service.ConsumerDedupService;
 import com.ecom.payment.service.PaymentUseCases;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,10 +15,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class OrderCreatedConsumer {
 
     private final PaymentUseCases paymentService;
+    private final ConsumerDedupService dedupService;
     private final ObjectMapper objectMapper;
 
-    public OrderCreatedConsumer(PaymentUseCases paymentService, ObjectMapper objectMapper) {
+    public OrderCreatedConsumer(PaymentUseCases paymentService, ConsumerDedupService dedupService, ObjectMapper objectMapper) {
         this.paymentService = paymentService;
+        this.dedupService = dedupService;
         this.objectMapper = objectMapper;
     }
 
@@ -30,6 +33,9 @@ public class OrderCreatedConsumer {
         try {
             var typeRef = new TypeReference<DomainEvent<Map<String, Object>>>() {};
             DomainEvent<Map<String, Object>> event = objectMapper.readValue(rawEvent, typeRef);
+            if (!dedupService.markIfNew(event.eventId() == null ? null : event.eventId().toString())) {
+                return;
+            }
 
             if (event.payload() == null) {
                 return;

@@ -17,9 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.kafka.core.KafkaTemplate;
-
-import com.ecom.common.DomainEvent;
 import com.ecom.order.dto.CreateOrderRequest;
 import com.ecom.order.dto.OrderItemRequest;
 import com.ecom.order.entity.OrderRecord;
@@ -34,13 +31,13 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private OutboxService outboxService;
 
     @InjectMocks
     private OrderService orderService = new OrderService(
             orderRepository,
             new ObjectMapper(),
-            kafkaTemplate,
+            outboxService,
             "order.created.v1");
 
     @Test
