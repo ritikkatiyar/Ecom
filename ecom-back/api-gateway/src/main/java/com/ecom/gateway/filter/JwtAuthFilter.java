@@ -1,7 +1,6 @@
 package com.ecom.gateway.filter;
 
 import java.time.Duration;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -9,6 +8,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -22,36 +22,33 @@ import reactor.core.publisher.Mono;
 public class JwtAuthFilter implements GlobalFilter, Ordered {
 
     private final WebClient webClient;
-    private final List<String> protectedPathPrefixes;
+    private final GatewayErrorWriter gatewayErrorWriter;
 
     public JwtAuthFilter(
             WebClient.Builder webClientBuilder,
-            @Value("${app.gateway.auth.validate-url:http://localhost:8081/api/auth/validate}") String validateUrl) {
+            @Value("${app.gateway.auth.validate-url:http://localhost:8081/api/auth/validate}") String validateUrl,
+            GatewayErrorWriter gatewayErrorWriter) {
         this.webClient = webClientBuilder
                 .baseUrl(validateUrl)
                 .build();
-        this.protectedPathPrefixes = List.of(
-                "/api/products",
-                "/api/inventory",
-                "/api/cart",
-                "/api/orders",
-                "/api/payments",
-                "/api/search",
-                "/api/users",
-                "/api/reviews");
+        this.gatewayErrorWriter = gatewayErrorWriter;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
-        if (!isProtected(path) || "OPTIONS".equalsIgnoreCase(exchange.getRequest().getMethod().name())) {
+        HttpMethod method = exchange.getRequest().getMethod();
+        if (method == HttpMethod.OPTIONS || !isProtected(path, method)) {
             return chain.filter(exchange);
         }
 
         String authorization = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (authorization == null || !authorization.startsWith("Bearer ")) {
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return gatewayErrorWriter.write(
+                    exchange,
+                    HttpStatus.UNAUTHORIZED,
+                    "AUTH_TOKEN_MISSING",
+                    "Bearer token is required for this endpoint.");
         }
 
         return webClient.get()
@@ -64,19 +61,42 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
                 .flatMap(body -> {
                     boolean active = body.path("active").asBoolean(false);
                     if (!active) {
-                        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                        return exchange.getResponse().setComplete();
+                        return gatewayErrorWriter.write(
+                                exchange,
+                                HttpStatus.UNAUTHORIZED,
+                                "AUTH_TOKEN_INVALID",
+                                "Token is invalid, expired, or blacklisted.");
                     }
                     return chain.filter(exchange);
                 })
                 .onErrorResume(ex -> {
-                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                    return exchange.getResponse().setComplete();
+                    return gatewayErrorWriter.write(
+                            exchange,
+                            HttpStatus.SERVICE_UNAVAILABLE,
+                            "AUTH_VALIDATION_UNAVAILABLE",
+                            "Auth validation service is unavailable.");
                 });
     }
 
-    private boolean isProtected(String path) {
-        return protectedPathPrefixes.stream().anyMatch(path::startsWith);
+    private boolean isProtected(String path, HttpMethod method) {
+        if (path.startsWith("/api/cart")
+                || path.startsWith("/api/orders")
+                || path.startsWith("/api/payments")
+                || path.startsWith("/api/inventory")
+                || path.startsWith("/api/users")
+                || path.startsWith("/api/reviews")) {
+            return true;
+        }
+
+        if (path.startsWith("/api/products")) {
+            return method != HttpMethod.GET;
+        }
+
+        if (path.startsWith("/api/search")) {
+            return method != HttpMethod.GET;
+        }
+
+        return false;
     }
 
     @Override

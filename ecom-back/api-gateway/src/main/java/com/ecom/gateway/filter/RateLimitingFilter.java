@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -16,6 +17,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
+@ConditionalOnProperty(name = "app.gateway.rate-limit.mode", havingValue = "in-memory")
 public class RateLimitingFilter implements GlobalFilter, Ordered {
 
     private static final class CounterWindow {
@@ -26,12 +28,15 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
     private final Map<String, CounterWindow> clientWindows = new ConcurrentHashMap<>();
     private final int maxRequests;
     private final long windowMillis;
+    private final GatewayErrorWriter gatewayErrorWriter;
 
     public RateLimitingFilter(
             @Value("${app.gateway.rate-limit.max-requests:120}") int maxRequests,
-            @Value("${app.gateway.rate-limit.window-seconds:60}") int windowSeconds) {
+            @Value("${app.gateway.rate-limit.window-seconds:60}") int windowSeconds,
+            GatewayErrorWriter gatewayErrorWriter) {
         this.maxRequests = maxRequests;
         this.windowMillis = windowSeconds * 1000L;
+        this.gatewayErrorWriter = gatewayErrorWriter;
     }
 
     @Override
@@ -58,8 +63,11 @@ public class RateLimitingFilter implements GlobalFilter, Ordered {
 
             int current = window.requests.incrementAndGet();
             if (current > maxRequests) {
-                exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-                return exchange.getResponse().setComplete();
+                return gatewayErrorWriter.write(
+                        exchange,
+                        HttpStatus.TOO_MANY_REQUESTS,
+                        "RATE_LIMIT_EXCEEDED",
+                        "Rate limit exceeded. Try again later.");
             }
         }
 

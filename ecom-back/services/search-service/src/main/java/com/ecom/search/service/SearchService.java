@@ -1,6 +1,7 @@
 package com.ecom.search.service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -20,10 +22,14 @@ import org.springframework.web.client.RestClient;
 import com.ecom.search.dto.ProductIndexRequest;
 import com.ecom.search.dto.ProductSearchPageResponse;
 import com.ecom.search.dto.ProductSearchResponse;
+import com.ecom.search.dto.RelevanceCaseResultResponse;
+import com.ecom.search.dto.RelevanceDatasetHealthResponse;
+import com.ecom.search.dto.RelevanceEvaluationResponse;
 import com.ecom.search.dto.ReindexResponse;
 import com.ecom.search.model.SearchProductDocument;
 import com.ecom.search.repository.SearchProductRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
@@ -33,17 +39,26 @@ public class SearchService implements SearchUseCases {
     private final ElasticsearchOperations operations;
     private final ObjectMapper objectMapper;
     private final RestClient productClient;
+    private final Resource relevanceDatasetResource;
+    private final Resource relevanceDatasetMetadataResource;
+    private final double targetPassRate;
 
     public SearchService(
             SearchProductRepository repository,
             ElasticsearchOperations operations,
             ObjectMapper objectMapper,
             RestClient.Builder restClientBuilder,
-            @Value("${app.search.product-service-base-url:http://localhost:8083}") String productServiceBaseUrl) {
+            @Value("${app.search.product-service-base-url:http://localhost:8083}") String productServiceBaseUrl,
+            @Value("classpath:search-relevance-dataset.json") Resource relevanceDatasetResource,
+            @Value("classpath:search-relevance-dataset-metadata.json") Resource relevanceDatasetMetadataResource,
+            @Value("${app.search.relevance.target-pass-rate:85.0}") double targetPassRate) {
         this.repository = repository;
         this.operations = operations;
         this.objectMapper = objectMapper;
         this.productClient = restClientBuilder.baseUrl(productServiceBaseUrl).build();
+        this.relevanceDatasetResource = relevanceDatasetResource;
+        this.relevanceDatasetMetadataResource = relevanceDatasetMetadataResource;
+        this.targetPassRate = targetPassRate;
     }
 
     @Override
@@ -136,6 +151,80 @@ public class SearchService implements SearchUseCases {
         }
 
         return new ReindexResponse(purgeFirst, pagesProcessed, fetched, indexed, Instant.now());
+    }
+
+    @Override
+    public RelevanceEvaluationResponse evaluateRelevanceDataset(int topN) {
+        int safeTopN = Math.max(1, Math.min(topN, 20));
+        List<RelevanceSample> dataset = loadRelevanceDataset();
+        List<RelevanceCaseResultResponse> results = new ArrayList<>();
+        int passed = 0;
+
+        for (RelevanceSample sample : dataset) {
+            ProductSearchPageResponse searchResult = search(
+                    sample.query(),
+                    blankToNull(sample.category()),
+                    blankToNull(sample.brand()),
+                    true,
+                    0,
+                    safeTopN,
+                    "score",
+                    "desc");
+
+            List<String> topProductIds = searchResult.content().stream()
+                    .map(ProductSearchResponse::productId)
+                    .toList();
+            String actualTop = topProductIds.isEmpty() ? null : topProductIds.get(0);
+            boolean topMatch = safeEquals(sample.expectedTopProductId(), actualTop);
+            boolean expectedPresent = sample.expectedInTopN() != null
+                    && sample.expectedInTopN().stream().anyMatch(topProductIds::contains);
+            boolean casePass = topMatch || expectedPresent;
+
+            if (casePass) {
+                passed++;
+            }
+
+            results.add(new RelevanceCaseResultResponse(
+                    sample.query(),
+                    sample.expectedTopProductId(),
+                    actualTop,
+                    topMatch,
+                    expectedPresent,
+                    topProductIds));
+        }
+
+        int datasetSize = results.size();
+        int failed = datasetSize - passed;
+        double passRate = datasetSize == 0 ? 0.0 : ((double) passed / datasetSize) * 100.0;
+        boolean meetsTarget = passRate >= targetPassRate;
+
+        return new RelevanceEvaluationResponse(
+                datasetSize,
+                passed,
+                failed,
+                passRate,
+                targetPassRate,
+                meetsTarget,
+                Instant.now(),
+                results);
+    }
+
+    @Override
+    public RelevanceDatasetHealthResponse evaluateRelevanceDatasetHealth() {
+        List<RelevanceSample> dataset = loadRelevanceDataset();
+        RelevanceDatasetMetadata metadata = loadRelevanceDatasetMetadata();
+        Instant now = Instant.now();
+        long daysSinceRefresh = Math.max(0, ChronoUnit.DAYS.between(metadata.lastRefreshedAt(), now));
+        boolean refreshRequired = daysSinceRefresh >= metadata.refreshCadenceDays();
+
+        return new RelevanceDatasetHealthResponse(
+                metadata.version(),
+                dataset.size(),
+                metadata.lastRefreshedAt(),
+                metadata.refreshCadenceDays(),
+                daysSinceRefresh,
+                refreshRequired,
+                now);
     }
 
     private SearchProductDocument map(ProductIndexRequest request) {
@@ -297,6 +386,50 @@ public class SearchService implements SearchUseCases {
             List<String> sizes,
             Boolean active,
             Map<String, Object> ignored) {
+    }
+
+    private List<RelevanceSample> loadRelevanceDataset() {
+        try (var input = relevanceDatasetResource.getInputStream()) {
+            return objectMapper.readValue(input, new TypeReference<List<RelevanceSample>>() {});
+        } catch (Exception ex) {
+            throw new IllegalStateException("Could not load search relevance dataset", ex);
+        }
+    }
+
+    private RelevanceDatasetMetadata loadRelevanceDatasetMetadata() {
+        try (var input = relevanceDatasetMetadataResource.getInputStream()) {
+            return objectMapper.readValue(input, RelevanceDatasetMetadata.class);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Could not load search relevance dataset metadata", ex);
+        }
+    }
+
+    private boolean safeEquals(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
+    }
+
+    private String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
+    }
+
+    private record RelevanceSample(
+            String query,
+            String category,
+            String brand,
+            String expectedTopProductId,
+            List<String> expectedInTopN) {
+    }
+
+    private record RelevanceDatasetMetadata(
+            String version,
+            Instant lastRefreshedAt,
+            int refreshCadenceDays) {
     }
 
     private String json(String value) {

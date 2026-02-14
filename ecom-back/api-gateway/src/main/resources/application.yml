@@ -1,6 +1,10 @@
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
   cloud:
     gateway:
       routes:
@@ -8,30 +12,128 @@ spring:
           uri: http://localhost:8081
           predicates:
             - Path=/api/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authCircuit
+                fallbackUri: forward:/fallback/auth
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 6
+                redis-rate-limiter.burstCapacity: 12
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 3000
         - id: product
           uri: http://localhost:8083
           predicates:
             - Path=/api/products/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: productCircuit
+                fallbackUri: forward:/fallback/product
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 40
+                redis-rate-limiter.burstCapacity: 80
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 5000
         - id: inventory
           uri: http://localhost:8084
           predicates:
             - Path=/api/inventory/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: inventoryCircuit
+                fallbackUri: forward:/fallback/inventory
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 25
+                redis-rate-limiter.burstCapacity: 50
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 4000
         - id: cart
           uri: http://localhost:8085
           predicates:
             - Path=/api/cart/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: cartCircuit
+                fallbackUri: forward:/fallback/cart
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 30
+                redis-rate-limiter.burstCapacity: 60
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 4000
         - id: order
           uri: http://localhost:8086
           predicates:
             - Path=/api/orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: orderCircuit
+                fallbackUri: forward:/fallback/order
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 15
+                redis-rate-limiter.burstCapacity: 30
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 5000
         - id: payment
           uri: http://localhost:8087
           predicates:
             - Path=/api/payments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: paymentCircuit
+                fallbackUri: forward:/fallback/payment
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 5000
         - id: search
           uri: http://localhost:8089
           predicates:
             - Path=/api/search/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: searchCircuit
+                fallbackUri: forward:/fallback/search
+            - name: RequestRateLimiter
+              args:
+                key-resolver: "#{@ipKeyResolver}"
+                deny-empty-key: true
+                redis-rate-limiter.replenishRate: 35
+                redis-rate-limiter.burstCapacity: 70
+                redis-rate-limiter.requestedTokens: 1
+          metadata:
+            response-timeout: 3000
 
 server:
   port: 8080
@@ -41,6 +143,7 @@ app:
     api-version:
       required: v1
     rate-limit:
+      mode: redis
       max-requests: 120
       window-seconds: 60
     auth:
@@ -51,3 +154,62 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 60
+        slowCallDurationThreshold: 2s
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 20s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      authCircuit:
+        baseConfig: default
+      productCircuit:
+        baseConfig: default
+      inventoryCircuit:
+        baseConfig: default
+      cartCircuit:
+        baseConfig: default
+      orderCircuit:
+        baseConfig: default
+      paymentCircuit:
+        baseConfig: default
+      searchCircuit:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 3s
+        cancelRunningFuture: true
+    instances:
+      authCircuit:
+        baseConfig: default
+      productCircuit:
+        baseConfig: default
+      inventoryCircuit:
+        baseConfig: default
+      cartCircuit:
+        baseConfig: default
+      orderCircuit:
+        baseConfig: default
+      paymentCircuit:
+        baseConfig: default
+      searchCircuit:
+        baseConfig: default
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

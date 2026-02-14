@@ -22,32 +22,50 @@ import com.ecom.notification.repository.NotificationRecordRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+
 @Service
 public class NotificationService implements NotificationUseCases {
 
     private final NotificationRecordRepository repository;
     private final NotificationDeadLetterRepository deadLetterRepository;
     private final EmailSender emailSender;
+    private final NotificationTemplateService templateService;
+    private final NotificationAlertPublisher alertPublisher;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
     private final int maxRetry;
     private final String notificationDlqTopic;
+    private final Counter sentCounter;
+    private final Counter failedCounter;
+    private final Counter deadLetterCounter;
+    private final Counter requeueCounter;
 
     public NotificationService(
             NotificationRecordRepository repository,
             NotificationDeadLetterRepository deadLetterRepository,
             EmailSender emailSender,
+            NotificationTemplateService templateService,
+            NotificationAlertPublisher alertPublisher,
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper,
+            MeterRegistry meterRegistry,
             @Value("${app.notification.max-retry:3}") int maxRetry,
             @Value("${app.kafka.topics.notification-dlq:notification.dlq.v1}") String notificationDlqTopic) {
         this.repository = repository;
         this.deadLetterRepository = deadLetterRepository;
         this.emailSender = emailSender;
+        this.templateService = templateService;
+        this.alertPublisher = alertPublisher;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
         this.maxRetry = maxRetry;
         this.notificationDlqTopic = notificationDlqTopic;
+        this.sentCounter = meterRegistry.counter("notification.sent.total");
+        this.failedCounter = meterRegistry.counter("notification.failed.total");
+        this.deadLetterCounter = meterRegistry.counter("notification.dead_letter.total");
+        this.requeueCounter = meterRegistry.counter("notification.requeue.total");
     }
 
     @Override
@@ -67,8 +85,8 @@ public class NotificationService implements NotificationUseCases {
         record.setEventType(event.eventType() == null || event.eventType().isBlank() ? fallbackEventType : event.eventType());
         record.setUserId(resolveUserId(event.payload()));
         record.setRecipientEmail(resolveRecipientEmail(event.payload()));
-        record.setSubject(resolveSubject(record.getEventType(), event.payload()));
-        record.setBody(resolveBody(record.getEventType(), event.payload()));
+        record.setSubject(templateService.renderSubject(record.getEventType(), event.payload()));
+        record.setBody(templateService.renderBody(record.getEventType(), event.payload()));
         record.setRetryCount(0);
         record.setStatus(NotificationStatus.PENDING);
 
@@ -140,12 +158,8 @@ public class NotificationService implements NotificationUseCases {
 
         deadLetter.setStatus("REQUEUED");
         deadLetterRepository.save(deadLetter);
+        requeueCounter.increment();
         return true;
-    }
-
-    @Scheduled(fixedDelayString = "PT60S")
-    public void scheduledRetryFailed() {
-        retryFailed();
     }
 
     private void deliver(NotificationRecord record) {
@@ -153,6 +167,7 @@ public class NotificationService implements NotificationUseCases {
             emailSender.send(record.getRecipientEmail(), record.getSubject(), record.getBody());
             record.setStatus(NotificationStatus.SENT);
             record.setLastError(null);
+            sentCounter.increment();
         } catch (Exception ex) {
             int nextRetry = record.getRetryCount() + 1;
             record.setRetryCount(nextRetry);
@@ -164,6 +179,7 @@ public class NotificationService implements NotificationUseCases {
                 return;
             }
             record.setStatus(NotificationStatus.FAILED);
+            failedCounter.increment();
         }
         repository.save(record);
     }
@@ -218,6 +234,8 @@ public class NotificationService implements NotificationUseCases {
         dead.setSourceTopic(record.getEventType());
         deadLetterRepository.save(dead);
         publishDlqEvent(dead);
+        alertPublisher.publishDeadLetterAlert(dead);
+        deadLetterCounter.increment();
     }
 
     private void publishDlqEvent(NotificationDeadLetterRecord dead) {
@@ -264,35 +282,6 @@ public class NotificationService implements NotificationUseCases {
         return "user" + userId + "@example.local";
     }
 
-    private String resolveSubject(String eventType, Map<String, Object> payload) {
-        String orderId = payload.get("orderId") == null ? "N/A" : payload.get("orderId").toString();
-        if ("payment.authorized.v1".equalsIgnoreCase(eventType)) {
-            return "Payment received for order " + orderId;
-        }
-        if ("payment.failed.v1".equalsIgnoreCase(eventType)) {
-            return "Payment failed for order " + orderId;
-        }
-        if ("order.created.v1".equalsIgnoreCase(eventType)) {
-            return "Order placed successfully: " + orderId;
-        }
-        return "Order update: " + orderId;
-    }
-
-    private String resolveBody(String eventType, Map<String, Object> payload) {
-        String orderId = payload.get("orderId") == null ? "N/A" : payload.get("orderId").toString();
-        if ("payment.authorized.v1".equalsIgnoreCase(eventType)) {
-            return "Your payment has been authorized for order " + orderId + ".";
-        }
-        if ("payment.failed.v1".equalsIgnoreCase(eventType)) {
-            String reason = payload.get("reason") == null ? "Unknown reason" : payload.get("reason").toString();
-            return "Your payment failed for order " + orderId + ". Reason: " + reason;
-        }
-        if ("order.created.v1".equalsIgnoreCase(eventType)) {
-            return "Your order " + orderId + " is created and pending payment confirmation.";
-        }
-        return "Order update received for order " + orderId + ".";
-    }
-
     private String trim(String value, int max) {
         if (value == null) {
             return null;
@@ -301,5 +290,10 @@ public class NotificationService implements NotificationUseCases {
             return value;
         }
         return value.substring(0, max);
+    }
+
+    @Scheduled(fixedDelayString = "PT60S")
+    public void scheduledRetryFailed() {
+        retryFailed();
     }
 }

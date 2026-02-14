@@ -1,7 +1,6 @@
 package com.ecom.search.service;
 
-import java.time.Instant;
-
+import com.ecom.common.reliability.ConsumerDedupSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,16 +18,10 @@ public class ConsumerDedupService {
 
     @Transactional
     public boolean markIfNew(String eventId) {
-        if (eventId == null || eventId.isBlank()) {
-            return true;
-        }
-        if (consumedEventRepository.existsById(eventId)) {
-            return false;
-        }
-        ConsumedEventRecord record = new ConsumedEventRecord();
-        record.setEventId(eventId);
-        record.setConsumedAt(Instant.now());
-        consumedEventRepository.save(record);
-        return true;
+        return ConsumerDedupSupport.markIfNew(
+                eventId,
+                consumedEventRepository::existsById,
+                ConsumedEventRecord::new,
+                consumedEventRepository::save);
     }
 }

@@ -1,0 +1,72 @@
+[
+  {
+    "query": "iphone 15",
+    "category": "electronics",
+    "brand": "Apple",
+    "expectedTopProductId": "prod-iphone-15",
+    "expectedInTopN": ["prod-iphone-15", "prod-iphone-15-plus"]
+  },
+  {
+    "query": "nike running shoes",
+    "category": "fashion",
+    "brand": "Nike",
+    "expectedTopProductId": "prod-nike-runner-1",
+    "expectedInTopN": ["prod-nike-runner-1", "prod-nike-runner-2"]
+  },
+  {
+    "query": "wireless earbuds",
+    "category": "electronics",
+    "brand": "",
+    "expectedTopProductId": "prod-earbuds-pro",
+    "expectedInTopN": ["prod-earbuds-pro", "prod-earbuds-lite"]
+  },
+  {
+    "query": "samsung s24 ultra",
+    "category": "electronics",
+    "brand": "Samsung",
+    "expectedTopProductId": "prod-samsung-s24-ultra",
+    "expectedInTopN": ["prod-samsung-s24-ultra", "prod-samsung-s24"]
+  },
+  {
+    "query": "men cotton tshirt",
+    "category": "fashion",
+    "brand": "",
+    "expectedTopProductId": "prod-mens-cotton-tee",
+    "expectedInTopN": ["prod-mens-cotton-tee", "prod-mens-roundneck-tee"]
+  },
+  {
+    "query": "gaming laptop",
+    "category": "electronics",
+    "brand": "",
+    "expectedTopProductId": "prod-gaming-laptop-rtx",
+    "expectedInTopN": ["prod-gaming-laptop-rtx", "prod-gaming-laptop-entry"]
+  },
+  {
+    "query": "women running shoes",
+    "category": "fashion",
+    "brand": "Nike",
+    "expectedTopProductId": "prod-nike-women-runner",
+    "expectedInTopN": ["prod-nike-women-runner", "prod-nike-runner-2"]
+  },
+  {
+    "query": "bluetooth speaker",
+    "category": "electronics",
+    "brand": "",
+    "expectedTopProductId": "prod-speaker-boom-pro",
+    "expectedInTopN": ["prod-speaker-boom-pro", "prod-speaker-boom-mini"]
+  },
+  {
+    "query": "apple watch series",
+    "category": "electronics",
+    "brand": "Apple",
+    "expectedTopProductId": "prod-apple-watch-series-9",
+    "expectedInTopN": ["prod-apple-watch-series-9", "prod-apple-watch-se"]
+  },
+  {
+    "query": "formal shirt slim fit",
+    "category": "fashion",
+    "brand": "",
+    "expectedTopProductId": "prod-formal-shirt-slimfit",
+    "expectedInTopN": ["prod-formal-shirt-slimfit", "prod-formal-shirt-regularfit"]
+  }
+]

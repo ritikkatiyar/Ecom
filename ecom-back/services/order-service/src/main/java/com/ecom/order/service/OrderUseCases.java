@@ -20,4 +20,8 @@ public interface OrderUseCases {
     void markPaymentAuthorized(String orderId);
 
     void markPaymentFailed(String orderId);
+
+    int markTimedOutOrders();
+
+    int replayFailedOutboxEvents();
 }

@@ -14,9 +14,13 @@ import reactor.core.publisher.Mono;
 public class ApiVersionFilter implements GlobalFilter, Ordered {
 
     private final String requiredVersion;
+    private final GatewayErrorWriter gatewayErrorWriter;
 
-    public ApiVersionFilter(@Value("${app.gateway.api-version.required:v1}") String requiredVersion) {
+    public ApiVersionFilter(
+            @Value("${app.gateway.api-version.required:v1}") String requiredVersion,
+            GatewayErrorWriter gatewayErrorWriter) {
         this.requiredVersion = requiredVersion;
+        this.gatewayErrorWriter = gatewayErrorWriter;
     }
 
     @Override
@@ -31,8 +35,11 @@ public class ApiVersionFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
-        return exchange.getResponse().setComplete();
+        return gatewayErrorWriter.write(
+                exchange,
+                HttpStatus.BAD_REQUEST,
+                "API_VERSION_MISMATCH",
+                "X-API-Version must be '" + requiredVersion + "'");
     }
 
     @Override

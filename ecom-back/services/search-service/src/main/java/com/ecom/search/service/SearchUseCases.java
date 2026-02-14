@@ -5,6 +5,8 @@ import java.util.List;
 import com.ecom.search.dto.ProductIndexRequest;
 import com.ecom.search.dto.ProductSearchPageResponse;
 import com.ecom.search.dto.ProductSearchResponse;
+import com.ecom.search.dto.RelevanceDatasetHealthResponse;
+import com.ecom.search.dto.RelevanceEvaluationResponse;
 import com.ecom.search.dto.ReindexResponse;
 
 public interface SearchUseCases {
@@ -28,4 +30,8 @@ public interface SearchUseCases {
     List<String> autocomplete(String q, int size);
 
     ReindexResponse reindexFromProductService(boolean purgeFirst, int pageSize);
+
+    RelevanceEvaluationResponse evaluateRelevanceDataset(int topN);
+
+    RelevanceDatasetHealthResponse evaluateRelevanceDatasetHealth();
 }

@@ -1,0 +1,18 @@
+{
+  "order.created.v1": {
+    "subject": "Order placed successfully: {{orderId}}",
+    "body": "Your order {{orderId}} has been created and is pending payment confirmation."
+  },
+  "payment.authorized.v1": {
+    "subject": "Payment received for order {{orderId}}",
+    "body": "Your payment has been authorized for order {{orderId}}."
+  },
+  "payment.failed.v1": {
+    "subject": "Payment failed for order {{orderId}}",
+    "body": "Your payment failed for order {{orderId}}. Reason: {{reason}}"
+  },
+  "default": {
+    "subject": "Order update: {{orderId}}",
+    "body": "Order update received for order {{orderId}}."
+  }
+}

@@ -3,9 +3,12 @@ package com.ecom.order.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,27 +17,50 @@ import com.ecom.order.dto.OrderItemRequest;
 import com.ecom.order.dto.OrderResponse;
 import com.ecom.order.entity.OrderRecord;
 import com.ecom.order.entity.OrderStatus;
+import com.ecom.order.entity.OutboxStatus;
+import com.ecom.order.repository.OutboxEventRepository;
 import com.ecom.order.repository.OrderRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @Service
 public class OrderService implements OrderUseCases {
 
     private final OrderRepository orderRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
     private final OutboxService outboxService;
     private final String orderCreatedTopic;
+    private final String orderTimedOutTopic;
+    private final int paymentTimeoutMinutes;
+    private final Counter timeoutCounter;
+    private final Counter outboxReplayCounter;
 
     public OrderService(
             OrderRepository orderRepository,
+            OutboxEventRepository outboxEventRepository,
             ObjectMapper objectMapper,
             OutboxService outboxService,
-            @Value("${app.kafka.topics.order-created:order.created.v1}") String orderCreatedTopic) {
+            MeterRegistry meterRegistry,
+            @Value("${app.kafka.topics.order-created:order.created.v1}") String orderCreatedTopic,
+            @Value("${app.kafka.topics.order-timed-out:order.timed-out.v1}") String orderTimedOutTopic,
+            @Value("${app.saga.payment-timeout-minutes:15}") int paymentTimeoutMinutes) {
         this.orderRepository = orderRepository;
+        this.outboxEventRepository = outboxEventRepository;
         this.objectMapper = objectMapper;
         this.outboxService = outboxService;
         this.orderCreatedTopic = orderCreatedTopic;
+        this.orderTimedOutTopic = orderTimedOutTopic;
+        this.paymentTimeoutMinutes = paymentTimeoutMinutes;
+        this.timeoutCounter = meterRegistry.counter("order.saga.timeout.total");
+        this.outboxReplayCounter = meterRegistry.counter("order.outbox.replay.total");
+        Gauge.builder("order.outbox.failed.records", outboxEventRepository,
+                        repo -> repo.countByStatus(OutboxStatus.FAILED))
+                .register(meterRegistry);
     }
 
     @Transactional
@@ -115,6 +141,48 @@ public class OrderService implements OrderUseCases {
         orderRepository.save(order);
     }
 
+    @Override
+    @Transactional
+    public int markTimedOutOrders() {
+        Instant deadline = Instant.now().minus(paymentTimeoutMinutes, ChronoUnit.MINUTES);
+        List<OrderRecord> staleOrders = orderRepository.findTop100ByStatusAndUpdatedAtBeforeOrderByUpdatedAtAsc(
+                OrderStatus.PAYMENT_PENDING, deadline);
+
+        int updated = 0;
+        for (OrderRecord order : staleOrders) {
+            if (order.getStatus() != OrderStatus.PAYMENT_PENDING) {
+                continue;
+            }
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            publishOrderTimedOut(order);
+            timeoutCounter.increment();
+            updated++;
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional
+    public int replayFailedOutboxEvents() {
+        List<com.ecom.order.entity.OutboxEventRecord> failed =
+                outboxEventRepository.findTop100ByStatusOrderByUpdatedAtAsc(OutboxStatus.FAILED);
+        int replayed = 0;
+        for (com.ecom.order.entity.OutboxEventRecord event : failed) {
+            event.setStatus(OutboxStatus.PENDING);
+            event.setLastError(null);
+            outboxEventRepository.save(event);
+            outboxReplayCounter.increment();
+            replayed++;
+        }
+        return replayed;
+    }
+
+    @Scheduled(fixedDelayString = "PT30S")
+    public void scheduledTimeoutSweep() {
+        markTimedOutOrders();
+    }
+
     private OrderRecord fetch(String orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
@@ -172,5 +240,14 @@ public class OrderService implements OrderUseCases {
                 Instant.now());
 
         outboxService.enqueue(orderCreatedTopic, order.getId(), "order.created.v1", payload, "order-service");
+    }
+
+    private void publishOrderTimedOut(OrderRecord order) {
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("userId", order.getUserId());
+        payload.put("status", order.getStatus().name());
+        payload.put("timedOutAt", Instant.now().toString());
+        outboxService.enqueue(orderTimedOutTopic, order.getId(), "order.timed-out.v1", payload, "order-service");
     }
 }

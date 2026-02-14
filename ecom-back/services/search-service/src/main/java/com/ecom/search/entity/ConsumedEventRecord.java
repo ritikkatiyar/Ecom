@@ -2,6 +2,8 @@ package com.ecom.search.entity;
 
 import java.time.Instant;
 
+import com.ecom.common.reliability.EventConsumptionRecord;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -16,7 +18,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Document(indexName = "search_consumed_events")
-public class ConsumedEventRecord {
+public class ConsumedEventRecord implements EventConsumptionRecord {
 
     @Id
     private String eventId;

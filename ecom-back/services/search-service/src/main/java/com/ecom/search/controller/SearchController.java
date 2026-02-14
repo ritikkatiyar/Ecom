@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ecom.search.dto.ProductIndexRequest;
 import com.ecom.search.dto.ProductSearchPageResponse;
 import com.ecom.search.dto.ProductSearchResponse;
+import com.ecom.search.dto.RelevanceDatasetHealthResponse;
+import com.ecom.search.dto.RelevanceEvaluationResponse;
 import com.ecom.search.dto.ReindexResponse;
 import com.ecom.search.service.SearchUseCases;
 
@@ -76,6 +78,17 @@ public class SearchController {
             @RequestParam(defaultValue = "true") boolean purgeFirst,
             @RequestParam(defaultValue = "200") int pageSize) {
         return searchService.reindexFromProductService(purgeFirst, pageSize);
+    }
+
+    @GetMapping("/admin/relevance/evaluate")
+    public RelevanceEvaluationResponse evaluateRelevance(
+            @RequestParam(name = "topN", defaultValue = "5") int topN) {
+        return searchService.evaluateRelevanceDataset(topN);
+    }
+
+    @GetMapping("/admin/relevance/dataset/health")
+    public RelevanceDatasetHealthResponse evaluateRelevanceDatasetHealth() {
+        return searchService.evaluateRelevanceDatasetHealth();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

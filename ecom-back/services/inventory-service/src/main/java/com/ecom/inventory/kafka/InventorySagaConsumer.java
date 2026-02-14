@@ -95,6 +95,19 @@ public class InventorySagaConsumer {
         });
     }
 
+    @KafkaListener(topics = "${app.kafka.topics.order-timed-out:order.timed-out.v1}", groupId = "inventory-service")
+    public void onOrderTimedOut(String rawEvent) {
+        parseEvent(rawEvent).ifPresent(event -> {
+            if (!dedupService.markIfNew(event.eventId() == null ? null : event.eventId().toString())) {
+                return;
+            }
+            String orderId = readString(event.payload(), "orderId");
+            if (orderId != null) {
+                inventoryService.releaseForOrder(orderId);
+            }
+        });
+    }
+
     private java.util.Optional<DomainEvent<Map<String, Object>>> parseEvent(String rawEvent) {
         if (rawEvent == null || rawEvent.isBlank()) {
             return java.util.Optional.empty();

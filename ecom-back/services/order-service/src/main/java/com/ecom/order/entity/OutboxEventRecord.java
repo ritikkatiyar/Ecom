@@ -2,6 +2,8 @@ package com.ecom.order.entity;
 
 import java.time.Instant;
 
+import com.ecom.common.reliability.RetryableOutboxRecord;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -23,7 +25,7 @@ import lombok.Setter;
 @Table(name = "order_outbox_events", indexes = {
         @Index(name = "idx_order_outbox_status", columnList = "status,createdAt")
 })
-public class OutboxEventRecord {
+public class OutboxEventRecord implements RetryableOutboxRecord {
 
     @Id
     @Column(nullable = false, length = 120)
@@ -46,7 +48,7 @@ public class OutboxEventRecord {
     private OutboxStatus status;
 
     @Column(nullable = false)
-    private Integer attempts;
+    private int attempts;
 
     @Column(length = 500)
     private String lastError;
@@ -58,4 +60,19 @@ public class OutboxEventRecord {
     @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Override
+    public void markSent() {
+        this.status = OutboxStatus.SENT;
+    }
+
+    @Override
+    public void markPending() {
+        this.status = OutboxStatus.PENDING;
+    }
+
+    @Override
+    public void markFailed() {
+        this.status = OutboxStatus.FAILED;
+    }
 }

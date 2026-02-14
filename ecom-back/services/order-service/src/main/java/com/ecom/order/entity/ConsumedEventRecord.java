@@ -2,6 +2,8 @@ package com.ecom.order.entity;
 
 import java.time.Instant;
 
+import com.ecom.common.reliability.EventConsumptionRecord;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,7 +17,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "order_consumed_events")
-public class ConsumedEventRecord {
+public class ConsumedEventRecord implements EventConsumptionRecord {
 
     @Id
     @Column(nullable = false, length = 120)

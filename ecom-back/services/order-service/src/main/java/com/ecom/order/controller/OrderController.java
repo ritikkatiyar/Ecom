@@ -56,6 +56,18 @@ public class OrderController {
         return orderService.confirmOrder(orderId);
     }
 
+    @PostMapping("/admin/saga/timeouts/run")
+    public ResponseEntity<String> runTimeoutSweep() {
+        int timedOut = orderService.markTimedOutOrders();
+        return ResponseEntity.ok("Timed-out orders marked cancelled: " + timedOut);
+    }
+
+    @PostMapping("/admin/outbox/replay-failed")
+    public ResponseEntity<String> replayFailedOutbox() {
+        int replayed = orderService.replayFailedOutboxEvents();
+        return ResponseEntity.ok("Outbox failed events reset to pending: " + replayed);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());

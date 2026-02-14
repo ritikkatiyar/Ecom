@@ -2,6 +2,14 @@
 
 Last updated: 2026-02-14
 
+## Change Log (Dated)
+- 2026-02-14: Added gateway standardized JSON error payloads and route policy tuning.
+- 2026-02-14: Added gateway route-level circuit breaker with fallback endpoints and Resilience4j policies.
+- 2026-02-14: Added search relevance target threshold evaluation and expanded calibration dataset.
+- 2026-02-14: Tuned notification alert thresholds in Prometheus and Grafana.
+- 2026-02-14: Added scheduled outbox/dedup cleanup automation across order/payment/inventory/notification/search services.
+- 2026-02-14: Expanded observability baseline with Prometheus + Zipkin tracing dependencies and trace-log correlation config across active services.
+
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
   - Route forwarding for `/api/auth`, `/api/products`, `/api/inventory`, `/api/cart`, `/api/orders`, `/api/payments`, `/api/search`.
@@ -13,13 +21,30 @@ Last updated: 2026-02-14
   - API gateway route aggregation.
   - Global correlation ID propagation (`X-Correlation-Id`).
   - API version guard (`X-API-Version: v1` for non-auth `/api/**` calls).
-  - In-memory per-IP rate limiting (window-based).
+  - Distributed Redis-backed per-IP route-level rate limiting (`RequestRateLimiter` + `ipKeyResolver`).
   - JWT validation filter via auth-service `/api/auth/validate`.
+  - Standardized JSON error payloads across auth/version/rate-limit filters.
+  - Route policy tuning: read-only product/search APIs are public, write paths remain protected.
+  - Route-level circuit breakers with fallback responses (`/fallback/{service}`).
+  - Resilience4j circuit breaker and time limiter baseline configuration.
+  - Zipkin tracing export and trace-log correlation pattern (`traceId`, `spanId`).
 - Verification:
-  - `api-gateway` compiles with new filters and security config.
+  - `api-gateway` compiles after circuit-breaker + fallback policy updates.
 - Pending:
-  - Distributed rate limiting (Redis/Bucket4j).
-  - Route-level policy tuning and exception payload standardization.
+  - Edge-route contract tests for public/protected behavior.
+
+## Shared Reliability (`ecom-back/common/common-core`)
+- Shared components added:
+  - `ConsumerDedupSupport` (generic event dedup helper).
+  - `OutboxPublishSupport` (generic outbox retry/publish loop).
+  - `EventConsumptionRecord` and `RetryableOutboxRecord` interfaces.
+- Adoption:
+  - Order/Payment/Inventory outbox publishers migrated.
+  - Order/Payment/Inventory/Search/Notification dedup services migrated.
+- Verification:
+  - `common-core` compiles after extraction.
+- Pending:
+  - Optional consolidation of service-specific outbox/dedup wrappers into thinner adapters.
 
 ## Auth Service (`ecom-back/services/auth-service`)
 - APIs:
@@ -37,6 +62,7 @@ Last updated: 2026-02-14
   - JWT + refresh token.
   - Token blacklist.
   - OAuth2 login handler.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
   - Service compiles and runs in local stack.
 - Pending:
@@ -71,6 +97,7 @@ Last updated: 2026-02-14
 - Patterns:
   - DIP via `ProductUseCases`.
   - OpenAPI + validation.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
   - Compiles.
 - Pending:
@@ -86,6 +113,7 @@ Last updated: 2026-02-14
   - `POST /api/inventory/confirm`
 - Kafka in:
   - `order.created.v1`
+  - `order.timed-out.v1`
   - `payment.authorized.v1`
   - `payment.failed.v1`
 - Kafka out:
@@ -100,6 +128,8 @@ Last updated: 2026-02-14
   - Deterministic reservation IDs (`orderId:sku`) for reconciliation.
   - Consumer dedup for Kafka events.
   - Outbox publisher for inventory reservation outcome events.
+  - Scheduled reliability cleanup for outbox and consumed-event dedup records.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
   - Compiles after saga + outbox/dedup extension.
 - Pending:
@@ -120,6 +150,7 @@ Last updated: 2026-02-14
   - User cart items in MySQL.
 - Patterns:
   - Guest-to-user merge.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
   - Service and tests compile.
 - Pending:
@@ -133,23 +164,30 @@ Last updated: 2026-02-14
   - `GET /api/orders?userId=...`
   - `POST /api/orders/{orderId}/cancel`
   - `POST /api/orders/{orderId}/confirm`
+  - `POST /api/orders/admin/saga/timeouts/run`
+  - `POST /api/orders/admin/outbox/replay-failed`
 - Kafka in:
   - `payment.authorized.v1`
   - `payment.failed.v1`
   - `inventory.reservation.failed.v1`
 - Kafka out:
   - `order.created.v1` (via outbox publisher)
+  - `order.timed-out.v1` (via outbox publisher)
 - Data model:
   - `OrderRecord`, consumed-event dedup table, outbox table (MySQL).
 - Patterns:
   - Saga coordinator role for order status.
   - Consumer idempotency.
   - Outbox publisher.
+  - Scheduled reliability cleanup for outbox and consumed-event dedup records.
+  - Scheduled timeout sweep for stuck `PAYMENT_PENDING` orders.
+  - Manual replay trigger for failed outbox events.
+  - Saga observability metrics (`order.saga.timeout.total`, `order.outbox.replay.total`, `order.outbox.failed.records`).
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
-  - Compiles after outbox + saga compensation updates.
+  - Compiles after timeout/replay tooling + metrics updates.
 - Pending:
-  - Replay tooling.
-  - Timeout handling.
+  - Alert threshold tuning and runbook-based operational validation.
 
 ## Payment Service (`ecom-back/services/payment-service`)
 - APIs:
@@ -167,6 +205,8 @@ Last updated: 2026-02-14
   - Webhook idempotency.
   - Consumer idempotency.
   - Outbox publisher.
+  - Scheduled reliability cleanup for outbox and consumed-event dedup records.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
   - Compiles after outbox + dedup updates.
 - Pending:
@@ -195,6 +235,7 @@ Last updated: 2026-02-14
   - `GET /api/search/products` (`activeOnly`, ranking-aware query)
   - `GET /api/search/autocomplete`
   - `POST /api/search/reindex/products`
+  - `GET /api/search/admin/relevance/evaluate`
 - Kafka in:
   - `product.upserted.v1`
   - `product.deleted.v1`
@@ -209,12 +250,15 @@ Last updated: 2026-02-14
   - Autocomplete query.
   - Service-to-service reindex pull from product-service (paged import).
   - Consumer dedup for product index events.
-  - DIP via `SearchUseCases`.
+  - Curated relevance dataset evaluation with configurable pass-rate target (`app.search.relevance.target-pass-rate`) and `meetsTarget` outcome.
+  - Scheduled consumed-event dedup cleanup.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
+- DIP via `SearchUseCases`.
 - Verification:
-  - Compiles after ranking/reindex hardening updates.
+  - Compiles after dataset expansion + target-threshold evaluation updates.
 - Pending:
-  - Ranking calibration with production-like relevance samples.
-  - Reindex and contract tests.
+  - Reindex and contract/integration tests.
+  - Dataset refresh cadence and baseline quality gate in CI.
 
 ## Notification Service (`ecom-back/services/notification-service`)
 - APIs:
@@ -229,6 +273,7 @@ Last updated: 2026-02-14
   - `payment.failed.v1`
 - Kafka out:
   - `notification.dlq.v1`
+  - `notification.alert.v1`
 - Data model:
   - `NotificationRecord` (MySQL).
 - Patterns:
@@ -237,8 +282,14 @@ Last updated: 2026-02-14
   - Scheduled retry for failed deliveries.
   - Config-driven provider abstraction (`log` / `smtp`).
   - Dead-letter escalation on retry exhaustion with requeue workflow.
+  - Template-based subject/body rendering from resource dataset.
+  - Metrics counters for sent/failed/dead-letter/requeue.
+  - Scheduled consumed-event dedup cleanup.
+  - Prometheus alert threshold tuning for dead-letter spikes and failure-rate monitoring.
+  - Grafana threshold bands for notification dead-letters and failure-rate stat panel.
+  - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
-  - Compiles after SMTP provider and DLQ workflow updates.
+  - Compiles after template engine + alert publisher + metrics integration.
 - Pending:
-  - Production SMTP credential/secrets wiring and template engine.
-  - DLQ monitoring/alerts dashboard wiring.
+  - Production SMTP credential/secrets wiring.
+  - Alertmanager receiver routing and on-call runbook drill validation.

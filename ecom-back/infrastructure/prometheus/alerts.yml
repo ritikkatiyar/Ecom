@@ -1,0 +1,52 @@
+groups:
+  - name: saga-alerts
+    rules:
+      - alert: OrderSagaTimeoutSpike
+        expr: increase(order_saga_timeout_total[10m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+          service: order-service
+        annotations:
+          summary: "Order saga timeout spike"
+          description: "More than 3 order timeouts detected in the last 10 minutes."
+
+      - alert: OrderOutboxFailuresPresent
+        expr: order_outbox_failed_records > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: order-service
+        annotations:
+          summary: "Order outbox has failed records"
+          description: "Order outbox failed records are above zero for at least 5 minutes."
+
+      - alert: NotificationDeadLetterSpike
+        expr: increase(notification_dead_letter_total[10m]) >= 2
+        for: 3m
+        labels:
+          severity: warning
+          service: notification-service
+        annotations:
+          summary: "Notification dead letters detected"
+          description: "At least two notifications moved to dead letter in the last 10 minutes."
+
+      - alert: NotificationDeadLetterCritical
+        expr: increase(notification_dead_letter_total[10m]) >= 5
+        for: 2m
+        labels:
+          severity: critical
+          service: notification-service
+        annotations:
+          summary: "Notification dead letters are spiking"
+          description: "Five or more notifications moved to dead letter in the last 10 minutes."
+
+      - alert: NotificationDeliveryFailureRateHigh
+        expr: (sum(increase(notification_failed_total[15m])) / clamp_min(sum(increase(notification_sent_total[15m]) + increase(notification_failed_total[15m])), 1)) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: notification-service
+        annotations:
+          summary: "Notification delivery failure rate is high"
+          description: "Failure rate exceeded 5% in the last 15 minutes."

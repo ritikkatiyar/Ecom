@@ -17,10 +17,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.ecom.order.dto.CreateOrderRequest;
 import com.ecom.order.dto.OrderItemRequest;
 import com.ecom.order.entity.OrderRecord;
 import com.ecom.order.entity.OrderStatus;
+import com.ecom.order.repository.OutboxEventRepository;
 import com.ecom.order.repository.OrderRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -33,12 +35,19 @@ class OrderServiceTest {
     @Mock
     private OutboxService outboxService;
 
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
     @InjectMocks
     private OrderService orderService = new OrderService(
             orderRepository,
+            outboxEventRepository,
             new ObjectMapper(),
             outboxService,
-            "order.created.v1");
+            new SimpleMeterRegistry(),
+            "order.created.v1",
+            "order.timed-out.v1",
+            15);
 
     @Test
     void createOrderCalculatesTotalAndMovesToPaymentPending() {
