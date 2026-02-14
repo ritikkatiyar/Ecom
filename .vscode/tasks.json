@@ -1,0 +1,246 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Infrastructure",
+      "type": "shell",
+      "command": "docker compose -f ecom-back/infrastructure/docker-compose.yml up -d",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Bootstrap Backend Shared Modules",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} elseif(Test-Path 'C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'){$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'} else { throw 'Maven not found. Install Maven first.' }; & $mc -pl common/common-core,common/common-events,common/common-security -am -DskipTests install",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run auth-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/auth-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run product-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/product-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run inventory-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/inventory-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run cart-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/cart-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run order-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/order-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run payment-service",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f services/payment-service/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run api-gateway",
+      "type": "shell",
+      "command": "$m=(Get-Command mvn -ErrorAction SilentlyContinue); if($m){$mc='mvn'} else {$mc='C:\\Tools\\apache-maven-3.9.9\\bin\\mvn.cmd'}; & $mc -f api-gateway/pom.xml spring-boot:run",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-back",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "backend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/ecom-frontend"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "frontend"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start Runtime (Backend + Frontend, Integrated)",
+      "dependsOn": [
+        "Run auth-service",
+        "Run product-service",
+        "Run inventory-service",
+        "Run cart-service",
+        "Run order-service",
+        "Run payment-service",
+        "Run api-gateway",
+        "Run frontend"
+      ],
+      "dependsOrder": "parallel"
+    },
+    {
+      "label": "Start Full Stack (Integrated)",
+      "dependsOn": [
+        "Start Infrastructure",
+        "Bootstrap Backend Shared Modules",
+        "Start Runtime (Backend + Frontend, Integrated)"
+      ],
+      "dependsOrder": "sequence",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Stop Full Stack (Integrated)",
+      "type": "shell",
+      "command": "$ports = 8080,8081,8083,8084,8085,8086,8087,5173; $targetPids = @(); foreach ($p in $ports) { $matches = netstat -ano | Select-String \":$p\\s+.*LISTENING\\s+(\\d+)$\"; foreach ($m in $matches) { $foundPid = [int]$m.Matches[0].Groups[1].Value; if ($foundPid -gt 0) { $targetPids += $foundPid } } }; $targetPids = $targetPids | Sort-Object -Unique; foreach ($onePid in $targetPids) { try { Stop-Process -Id $onePid -Force -ErrorAction Stop; Write-Host (\"Stopped PID {0}\" -f $onePid) } catch { Write-Host (\"Could not stop PID {0}: {1}\" -f $onePid, $_.Exception.Message) } }; docker compose -f ecom-back/infrastructure/docker-compose.yml down; Write-Host 'Full stack stopped.'",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "shell": {
+          "executable": "powershell",
+          "args": [
+            "-NoProfile",
+            "-Command"
+          ]
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

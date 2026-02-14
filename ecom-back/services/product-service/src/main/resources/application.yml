@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: mongo-kafka
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/ecom_product
+  kafka:
+    bootstrap-servers: localhost:9092
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  port: 8083
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

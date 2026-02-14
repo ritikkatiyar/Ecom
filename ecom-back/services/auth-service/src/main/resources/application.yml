@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: auth-service
+  profiles:
+    active: mysql-redis-kafka
+  datasource:
+    url: jdbc:mysql://localhost:3306/ecom_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:dev-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dev-google-client-secret}
+            scope: openid,profile,email
+
+security:
+  jwt:
+    secret: change-me-to-a-very-long-random-secret-key-for-hs256
+    access-token-ttl-seconds: 900
+    refresh-token-ttl-days: 14
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  port: 8081
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

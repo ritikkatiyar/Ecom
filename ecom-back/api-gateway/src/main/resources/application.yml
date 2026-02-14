@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/auth/**
+        - id: product
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/products/**
+        - id: inventory
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/inventory/**
+        - id: cart
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/cart/**
+        - id: order
+          uri: http://localhost:8086
+          predicates:
+            - Path=/api/orders/**
+        - id: payment
+          uri: http://localhost:8087
+          predicates:
+            - Path=/api/payments/**
+        - id: search
+          uri: http://localhost:8089
+          predicates:
+            - Path=/api/search/**
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: search-service
+  profiles:
+    active: es-kafka
+  kafka:
+    bootstrap-servers: localhost:9092
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+server:
+  port: 8089
