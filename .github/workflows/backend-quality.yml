@@ -20,6 +20,9 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Install parent aggregator POM
+        run: mvn -N -f ecom-back/pom.xml install
+
       - name: Build shared modules
         run: |
           mvn -f ecom-back/common/common-core/pom.xml -DskipTests install

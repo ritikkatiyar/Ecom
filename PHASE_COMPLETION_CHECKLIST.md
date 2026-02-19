@@ -15,7 +15,7 @@ Status: `In Progress (~99% core, remaining hardening)`
 - [x] Outbox + consumer dedup + cleanup schedulers on critical services.
 - [x] Release pipeline with smoke/rollback gates and rollback callback visibility.
 - [x] Load suites and regression jobs (staging + production read-heavy profile).
-- [ ] User service domain APIs (profile/address/preferences) pending.
+- [x] User service domain APIs (profile/address/preferences) implemented.
 - [ ] Review service domain APIs (CRUD/moderation) pending.
 - [ ] Final production hardening loop (threshold tuning, receiver validation, remaining contract depth) pending.
 
@@ -60,6 +60,6 @@ Status: `In Progress`
 - [ ] 10k-user sustained scenario validation + production-profile budget signoff pending.
 
 ## Immediate Next 3 Execution Items
-1. Complete `user-service` and `review-service` business APIs.
+1. Complete `review-service` business APIs.
 2. Execute and review scheduled release-gate drill artifacts, then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
 3. Raise SOLID maturity by SRP-oriented refactors in high-complexity services.

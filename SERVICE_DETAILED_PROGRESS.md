@@ -39,6 +39,7 @@ Last updated: 2026-02-19
 - 2026-02-19: Added production receiver config validator (`validate_alertmanager_receivers.py`) and wired it into `ops-receiver-drill.yml` as a hard pre-drill gate with artifacted validation report.
 - 2026-02-19: Added release readiness checklist gate (`release-readiness-checklist.yml`) and `check_release_readiness.py` to enforce drill/calibration artifact evidence before readiness signoff.
 - 2026-02-19: Added scheduled staged/prod release-gate drill workflow (`release-gate-drill.yml`) with `run_release_gate_drill.py` and auto-generated delta reports for runbook tuning capture.
+- 2026-02-19: Implemented user-service profile/address/preferences APIs with MySQL entities/repositories, DIP-aligned `UserUseCases`, and OpenAPI/observability baseline wiring.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -124,17 +125,27 @@ Last updated: 2026-02-19
 
 ## User Service (`ecom-back/services/user-service`)
 - APIs:
-  - Health only.
+  - `PUT /api/users/{userId}/profile`
+  - `GET /api/users/{userId}/profile`
+  - `PUT /api/users/{userId}/preferences`
+  - `GET /api/users/{userId}/preferences`
+  - `POST /api/users/{userId}/addresses`
+  - `GET /api/users/{userId}/addresses`
+  - `PUT /api/users/{userId}/addresses/{addressId}`
+  - `POST /api/users/{userId}/addresses/{addressId}/default`
+  - `DELETE /api/users/{userId}/addresses/{addressId}`
 - Kafka in/out:
-  - None.
+  - None yet.
 - Data model:
-  - Not implemented.
+  - `UserProfileRecord`, `UserAddressRecord`, `UserPreferencesRecord` (MySQL).
 - Patterns:
-  - Scaffold only.
+  - DIP via `UserUseCases`.
+  - Address default normalization ensures a single default per user.
+  - OpenAPI + Prometheus + Zipkin baseline in service config.
 - Verification:
-  - Module scaffold exists.
+  - `user-service` compiles and tests pass (`mvn -f ecom-back/services/user-service/pom.xml test`).
 - Pending:
-  - Full profile/address/preferences implementation.
+  - Add integration tests and auth-policy coupling from API gateway/write-path policy.
 
 ## Product Service (`ecom-back/services/product-service`)
 - APIs:

@@ -186,7 +186,7 @@ Generated on: 2026-02-19
 |---|---:|---|
 | API Gateway | 95% | In Progress |
 | Auth Service | 80% | In Progress |
-| User Service | 10% | Not Started (beyond scaffold) |
+| User Service | 58% | In Progress |
 | Product Service | 70% | In Progress |
 | Inventory Service | 96% | In Progress |
 | Cart Service | 70% | In Progress |
@@ -197,7 +197,7 @@ Generated on: 2026-02-19
 | Notification Service | 91% | In Progress |
 
 ## Major Backend Gaps Remaining
-1. Implement business logic for `user-service`, `review-service`, `search-service`, `notification-service`.
+1. Complete remaining business hardening for `user-service` and implement domain logic for `review-service` (search/notification already have active domain flows and need further hardening).
 2. Add stronger event architecture:
    - schema/versioning discipline
    - outbox pattern rollout (active in order/payment/inventory with shared common-core helpers)
@@ -214,3 +214,7 @@ Generated on: 2026-02-19
 3. Keep calibration delta changes tied to artifact evidence and weekly signoff.
 4. Complete user/review services and lock backend phase-exit criteria.
 5. Increase SOLID maturity with SRP/port-adapter refactors in complex services.
+- `user-service`
+  - profile, address, and preferences APIs on MySQL
+  - default-address normalization (`set default` clears prior defaults for the user)
+  - DIP boundary via `UserUseCases` interface
