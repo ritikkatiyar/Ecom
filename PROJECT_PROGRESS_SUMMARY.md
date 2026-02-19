@@ -126,11 +126,59 @@ Generated on: 2026-02-19
   - `ecom-back/load-tests/k6/cart-operations.js`
   - `ecom-back/load-tests/k6/checkout-flow.js`
   - unified runner: `ecom-back/load-tests/run-baseline-suites.ps1`
+- CI perf gate added in release pipeline:
+  - `backend-release.yml` job `load-regression`
+  - budget-enforced k6 runs against staging browse/cart/checkout endpoints
+- Production-aware perf gate added in release pipeline:
+  - `backend-release.yml` job `load-regression-production-read-heavy`
+  - read-heavy browse/cart profile + conservative checkout profile with separate budgets
+- Weekly production load-budget calibration automation added:
+  - workflow: `.github/workflows/load-budget-calibration.yml`
+  - script: `ecom-back/scripts/calibrate_load_budgets.py`
+  - telemetry auto-ingestion script: `ecom-back/scripts/fetch_load_telemetry_from_prometheus.py`
+  - outputs: calibration JSON/MD reports uploaded as workflow artifacts
+  - Prometheus query ingestion with fallback to repo-variable observed defaults
+  - configurable safety-margin factors for final recommendations
+  - approved calibration deltas applied to production release workflow p95 budgets:
+    - Browse: `260 -> 276`
+    - Cart: `300 -> 312`
+    - Checkout: `420 -> 432`
 - Post-deploy release safety added: smoke check gate + rollback trigger automation in `backend-release.yml`, with runbook `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
+- Release-gate visibility hardened:
+  - rollback verification callbacks (`post_release_gate_callback.py`)
+  - staging/production release gate summaries in `GITHUB_STEP_SUMMARY`
+  - `staging-release-gate-report` and `production-release-gate-report` artifacts
+  - gateway internal callback metrics ingestion endpoint (`POST /internal/release-gate/callbacks`) wired through optional `CALLBACK_METRICS_URL` in release workflow callback steps
+  - calibrated release-gate Prometheus alerts (`ReleaseGateRollbackCallbackFailuresPresent`, `ReleaseGateRollbackCallbackFailureRateCritical`, `ReleaseGateRollbackCallbackDrillMissing`) and updated drill thresholds in rollback runbook
+  - rollback drill-delta evaluation script added (`ecom-back/scripts/evaluate_release_gate_drills.py`) with runbook logging template for threshold change tracking
 - Payment outage observability hardening added:
   - Prometheus rules for `payment_provider_retry_total`, `payment_provider_dlq_total`, and requeue failures
   - Alertmanager payment owner routing (warning/critical)
   - runbook: `ecom-back/infrastructure/runbooks/PAYMENT_OUTAGE_DRILL.md`
+- Weekly production receiver drill cadence added:
+  - workflow: `.github/workflows/ops-receiver-drill.yml`
+  - script: `ecom-back/scripts/run_ops_receiver_drill.py`
+  - synthetic warning/critical alert fire mode against Alertmanager API
+  - drill artifacts for auditability (`ops-receiver-drill-report.json/.md`)
+  - pre-drill production receiver validation gate: `ecom-back/scripts/validate_alertmanager_receivers.py` (placeholder/malformed config blocker + artifacted report)
+- Release readiness checklist gate added:
+  - workflow: `.github/workflows/release-readiness-checklist.yml`
+  - checker script: `ecom-back/scripts/check_release_readiness.py`
+  - enforces receiver validation + ops drill + load calibration + rollback drill delta evidence
+- Scheduled release-gate drill automation added:
+  - workflow: `.github/workflows/release-gate-drill.yml`
+  - drill runner script: `ecom-back/scripts/run_release_gate_drill.py`
+  - produces `staging-release-gate.json`, `production-release-gate.json`, and evaluated tuning delta report artifacts
+- Search dataset ownership automation added:
+  - rotation config: `search-relevance-dataset-ownership.json`
+  - assignment script: `ecom-back/scripts/assign_search_dataset_reviewer.py`
+  - weekly workflow: `.github/workflows/search-dataset-rota.yml` (cadence report + issue assignment when due)
+  - reviewer-pool onboarding via `SEARCH_DATASET_REVIEWERS` repo variable override
+  - due-issue auto-close policy when dataset is within cadence
+  - minimum reviewer-pool policy (`SEARCH_DATASET_MIN_REVIEWERS`, default `2`) and collaborator permission validation gate for assignee eligibility
+- Release-gate rollback telemetry dashboard added:
+  - `ecom-back/infrastructure/grafana/dashboards/release-gate-observability.json`
+  - panels for rollback callback volume/failures/status split
 
 ## Service-by-Service Completion
 
@@ -163,6 +211,6 @@ Generated on: 2026-02-19
 ## Suggested Next Backend Milestone
 1. Replace Alertmanager placeholder webhooks with production receiver routes.
 2. Add deploy pipeline stages with environment promotion checks.
-3. Add rollback verification callbacks and release dashboard visibility.
-4. Add CI-triggered load regression stage with perf budget enforcement.
-5. Execute search dataset ownership rota automation (cadence + reviewer assignment).
+3. Keep calibration delta changes tied to artifact evidence and weekly signoff.
+4. Complete user/review services and lock backend phase-exit criteria.
+5. Increase SOLID maturity with SRP/port-adapter refactors in complex services.

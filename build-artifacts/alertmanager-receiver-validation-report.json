@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-02-19T16:45:43.523119+00:00",
+  "status": "failed",
+  "failures": [
+    "ALERTMANAGER_SLACK_API_URL:placeholder",
+    "ALERTMANAGER_PD_ROUTING_KEY_CRITICAL:placeholder",
+    "ALERTMANAGER_PD_ROUTING_KEY_ORDER:placeholder",
+    "ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION:placeholder",
+    "ALERTMANAGER_PD_ROUTING_KEY_PAYMENT:placeholder",
+    "ALERTMANAGER_EMAIL_ORDER:placeholder",
+    "ALERTMANAGER_EMAIL_NOTIFICATION:placeholder",
+    "ALERTMANAGER_EMAIL_PAYMENT:placeholder"
+  ],
+  "results": [
+    {
+      "key": "ALERTMANAGER_SLACK_API_URL",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_AUDIT_WEBHOOK_URL",
+      "ok": true,
+      "reason": "ok"
+    },
+    {
+      "key": "ALERTMANAGER_SLACK_CHANNEL_CRITICAL",
+      "ok": true,
+      "reason": "ok"
+    },
+    {
+      "key": "ALERTMANAGER_SLACK_CHANNEL_ORDER",
+      "ok": true,
+      "reason": "ok"
+    },
+    {
+      "key": "ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION",
+      "ok": true,
+      "reason": "ok"
+    },
+    {
+      "key": "ALERTMANAGER_SLACK_CHANNEL_PAYMENT",
+      "ok": true,
+      "reason": "ok"
+    },
+    {
+      "key": "ALERTMANAGER_PD_ROUTING_KEY_CRITICAL",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_PD_ROUTING_KEY_ORDER",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_PD_ROUTING_KEY_PAYMENT",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_EMAIL_ORDER",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_EMAIL_NOTIFICATION",
+      "ok": false,
+      "reason": "placeholder"
+    },
+    {
+      "key": "ALERTMANAGER_EMAIL_PAYMENT",
+      "ok": false,
+      "reason": "placeholder"
+    }
+  ]
+}

@@ -9,6 +9,12 @@ Validate Prometheus -> Alertmanager routing for warning and critical alerts.
 - Alertmanager loaded with `alertmanager.yml`.
 - `alertmanager.env` present (copy from `alertmanager.env.example` and set real values).
 - Optional local audit webhook listener on port `18080`.
+- For CI cadence drill (`.github/workflows/ops-receiver-drill.yml`):
+  - `PRODUCTION_ALERTMANAGER_API_URL`
+  - `PRODUCTION_ALERTMANAGER_API_BEARER_TOKEN` (optional)
+  - `ALERTMANAGER_PD_ROUTING_KEY_PAYMENT`
+  - `ALERTMANAGER_PD_ROUTING_KEY_CRITICAL`
+  - Repo vars: `ALERTMANAGER_SLACK_CHANNEL_PAYMENT`, `ALERTMANAGER_SLACK_CHANNEL_CRITICAL`
 
 ## Drill Steps
 1. Start observability stack:
@@ -40,3 +46,17 @@ Validate Prometheus -> Alertmanager routing for warning and critical alerts.
 - Keep `OWNERSHIP_MAP.md` updated for every new service alert.
 - Re-run this drill after receiver secret rotation.
 - For payment provider outage-specific validation, run `PAYMENT_OUTAGE_DRILL.md`.
+
+## Weekly Ops Cadence
+- Workflow: `.github/workflows/ops-receiver-drill.yml`
+- Schedule: weekly Tuesday (`10:00 UTC`) + manual trigger.
+- Script: `ecom-back/scripts/run_ops_receiver_drill.py`
+- Receiver validation gate: `ecom-back/scripts/validate_alertmanager_receivers.py`
+- Mode:
+  - `fire-alerts` (default): posts synthetic warning + critical alerts to Alertmanager API.
+  - `verify-only`: validates receiver configuration only.
+- Artifacts:
+  - `build-artifacts/ops-receiver-drill-report.json`
+  - `build-artifacts/ops-receiver-drill-report.md`
+  - `build-artifacts/alertmanager-receiver-validation-report.json`
+  - `build-artifacts/alertmanager-receiver-validation-report.md`

@@ -1,0 +1,55 @@
+name: release-gate-drill
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 11 * * 4"
+
+jobs:
+  run-release-gate-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Execute staged/prod release-gate drill
+        env:
+          DRILL_ENVIRONMENTS: staging,production
+          DRILL_REF: ${{ github.ref }}
+          DRILL_RUN_ID: ${{ github.run_id }}
+          STAGING_ROLLBACK_WEBHOOK: ${{ secrets.STAGING_ROLLBACK_WEBHOOK }}
+          STAGING_ROLLBACK_VERIFY_WEBHOOK: ${{ secrets.STAGING_ROLLBACK_VERIFY_WEBHOOK }}
+          STAGING_RELEASE_GATE_METRICS_URL: ${{ secrets.STAGING_RELEASE_GATE_METRICS_URL }}
+          PRODUCTION_ROLLBACK_WEBHOOK: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}
+          PRODUCTION_ROLLBACK_VERIFY_WEBHOOK: ${{ secrets.PRODUCTION_ROLLBACK_VERIFY_WEBHOOK }}
+          PRODUCTION_RELEASE_GATE_METRICS_URL: ${{ secrets.PRODUCTION_RELEASE_GATE_METRICS_URL }}
+        run: python ecom-back/scripts/run_release_gate_drill.py
+
+      - name: Evaluate drill deltas
+        run: python ecom-back/scripts/evaluate_release_gate_drills.py --out-dir build-artifacts
+
+      - name: Drill summary
+        if: always()
+        run: |
+          {
+            echo "## Release Gate Drill"
+            echo ""
+            cat build-artifacts/release-gate-drill-delta-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload drill artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-drill-report
+          path: |
+            build-artifacts/staging-release-gate.json
+            build-artifacts/production-release-gate.json
+            build-artifacts/release-gate-drill-report.json
+            build-artifacts/release-gate-drill-delta-report.json
+            build-artifacts/release-gate-drill-delta-report.md

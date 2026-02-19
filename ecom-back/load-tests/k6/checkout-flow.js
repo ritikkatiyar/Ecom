@@ -8,6 +8,9 @@ const API_VERSION = __ENV.API_VERSION || "v1";
 const VUS = Number(__ENV.VUS || "80");
 const ITERATIONS = Number(__ENV.ITERATIONS || "2500");
 const INCLUDE_PAYMENT_INTENT = (__ENV.INCLUDE_PAYMENT_INTENT || "true").toLowerCase() === "true";
+const P95_TARGET_MS = Number(__ENV.CHECKOUT_P95_MS || "320");
+const FAIL_RATE_MAX = __ENV.CHECKOUT_FAIL_RATE_MAX || "0.05";
+const SUCCESS_MIN = __ENV.CHECKOUT_SUCCESS_MIN || "0.95";
 
 const checkoutSuccessRate = new Rate("checkout_success_rate");
 
@@ -22,9 +25,9 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ["rate<0.05"],
-    http_req_duration: ["p(95)<320"],
-    checkout_success_rate: ["rate>0.95"],
+    http_req_failed: [`rate<${FAIL_RATE_MAX}`],
+    http_req_duration: [`p(95)<${P95_TARGET_MS}`],
+    checkout_success_rate: [`rate>${SUCCESS_MIN}`],
   },
 };
 

@@ -22,6 +22,23 @@ Last updated: 2026-02-19
 - 2026-02-19: Added post-deploy smoke-check and rollback trigger automation to release pipeline, plus deploy runbook (`DEPLOY_SMOKE_ROLLBACK.md`).
 - 2026-02-19: Added baseline k6 suites for browse/cart/checkout with defined performance budgets and unified runner script.
 - 2026-02-19: Added payment outage alert rules and Alertmanager payment receiver routing, with dedicated outage drill runbook (`PAYMENT_OUTAGE_DRILL.md`).
+- 2026-02-19: Added rollback verification callbacks and release-gate reporting (workflow summaries + downloadable JSON artifacts).
+- 2026-02-19: Added CI-triggered staging load-regression gate with budget pass/fail for browse/cart/checkout k6 suites.
+- 2026-02-19: Added search dataset reviewer rotation automation with weekly cadence workflow and due-review issue assignment.
+- 2026-02-19: Added Grafana release-gate dashboard panels for rollback callback telemetry (`ecom-release-gate-observability`).
+- 2026-02-19: Added production-aware load regression job (`load-regression-production-read-heavy`) with separate read-heavy budgets.
+- 2026-02-19: Added search rota multi-reviewer onboarding support (`SEARCH_DATASET_REVIEWERS`) and auto-close policy for due-review issues when cadence is healthy.
+- 2026-02-19: Added API gateway internal rollback-callback metrics endpoint and wired release callback script/workflow optional metrics posting (`CALLBACK_METRICS_URL`).
+- 2026-02-19: Added weekly production load-budget calibration workflow (`load-budget-calibration.yml`) with report artifacts from `calibrate_load_budgets.py`.
+- 2026-02-19: Added search reviewer-pool minimum-size policy and collaborator permission validation in `search-dataset-rota.yml`, plus dedup/health fields in `assign_search_dataset_reviewer.py`.
+- 2026-02-19: Calibrated release-gate rollback alerts in Prometheus (failure presence/failure rate/drill-missing), tuned Grafana failure panel window/thresholds, and updated rollback runbook baseline thresholds.
+- 2026-02-19: Added Prometheus auto-ingestion for weekly load budget calibration (`fetch_load_telemetry_from_prometheus.py`) and wired resolved `OBSERVED_*` env export into `load-budget-calibration.yml`.
+- 2026-02-19: Added weekly ops receiver drill cadence via `ops-receiver-drill.yml` and `run_ops_receiver_drill.py` (config validation + synthetic warning/critical route test + drill artifacts).
+- 2026-02-19: Added release-gate drill outcome evaluator (`evaluate_release_gate_drills.py`) and runbook delta-log template for staged/prod rollback threshold tuning capture.
+- 2026-02-19: Applied approved production load calibration deltas to release workflow budgets (`backend-release.yml`): browse p95 `276`, cart p95 `312`, checkout p95 `432`.
+- 2026-02-19: Added production receiver config validator (`validate_alertmanager_receivers.py`) and wired it into `ops-receiver-drill.yml` as a hard pre-drill gate with artifacted validation report.
+- 2026-02-19: Added release readiness checklist gate (`release-readiness-checklist.yml`) and `check_release_readiness.py` to enforce drill/calibration artifact evidence before readiness signoff.
+- 2026-02-19: Added scheduled staged/prod release-gate drill workflow (`release-gate-drill.yml`) with `run_release_gate_drill.py` and auto-generated delta reports for runbook tuning capture.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -40,11 +57,12 @@ Last updated: 2026-02-19
   - Route policy tuning: read-only product/search APIs are public, write paths remain protected.
   - Route-level circuit breakers with fallback responses (`/fallback/{service}`).
   - Resilience4j circuit breaker and time limiter baseline configuration.
+  - Internal release-gate callback metrics ingestion endpoint (`POST /internal/release-gate/callbacks`) for Prometheus-scraped rollback callback counters.
   - Zipkin tracing export and trace-log correlation pattern (`traceId`, `spanId`).
 - Verification:
   - `api-gateway` tests pass for version-guard, JWT route policy, and fallback contract behavior.
 - Pending:
-  - Edge-route contract tests for public/protected behavior.
+  - Breaker-threshold tuning and callback metric alert calibration under drill traffic.
 
 ## Observability Infra (`ecom-back/infrastructure`)
 - Components:
@@ -55,8 +73,18 @@ Last updated: 2026-02-19
   - Payment-specific alert rules added (`PaymentProviderRetrySpike`, `PaymentProviderDlqIncrease`, `PaymentProviderRequeueFailures`).
   - Alertmanager routing/receivers extended for `payment-service` warning and critical paths.
   - Payment drill runbook added: `runbooks/PAYMENT_OUTAGE_DRILL.md`.
+  - Release-gate telemetry dashboard added: `grafana/dashboards/release-gate-observability.json`.
+  - Release-gate alert calibration added in `prometheus/alerts.yml`:
+    - `ReleaseGateRollbackCallbackFailuresPresent` (>=1 failure in 6h, warning)
+    - `ReleaseGateRollbackCallbackFailureRateCritical` (>20% in 24h with >=3 events, critical)
+    - `ReleaseGateRollbackCallbackDrillMissing` (<1 callback event over 14d, warning)
+  - Weekly receiver drill runbook/workflow integration:
+    - `runbooks/ALERT_DRILL.md` cadence section
+    - `.github/workflows/ops-receiver-drill.yml`
+    - `scripts/run_ops_receiver_drill.py`
+    - `scripts/validate_alertmanager_receivers.py` (placeholder/malformed config blocker)
 - Pending:
-  - Replace placeholder webhook receivers with production integrations (Slack/PagerDuty/email) and validate rollback callback telemetry.
+  - Replace placeholder webhook receivers with production integrations (Slack/PagerDuty/email) and validate calibrated rollback callback thresholds against live drill noise.
 
 ## Shared Reliability (`ecom-back/common/common-core`)
 - Shared components added:
@@ -177,7 +205,8 @@ Last updated: 2026-02-19
   - Cart: p95 `<220ms`, fail rate `<3%`, cart consistency `>99%`
   - Checkout: p95 `<320ms`, fail rate `<5%`, checkout success `>95%`
 - Pending:
-  - Add CI pipeline stage to run selected suites and block regressions on threshold violations.
+  - Maintain weekly change-review gate ensuring calibration artifacts are attached to each threshold update.
+  - Add explicit query overrides for environment-specific URI label patterns if metrics cardinality changes.
 
 ## Cart Service (`ecom-back/services/cart-service`)
 - APIs:
@@ -311,7 +340,7 @@ Last updated: 2026-02-19
   - `search-service` tests pass for relevance controller contract and dataset health service logic.
 - Pending:
   - Reindex integration coverage with seeded elastic documents.
-  - Dataset refresh cadence ownership + baseline quality gate in CI.
+  - Keep reviewer pool ownership mapping aligned with team changes and release calendar.
 
 ## Notification Service (`ecom-back/services/notification-service`)
 - APIs:

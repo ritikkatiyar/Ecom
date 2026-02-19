@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-02-19T16:28:32.470018+00:00",
+  "prometheusBaseUrlConfigured": false,
+  "metrics": [
+    {
+      "name": "OBSERVED_BROWSE_P95_MS",
+      "value": 230.0,
+      "source": "fallback",
+      "error": "",
+      "query": "1000 * histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"product-service\",method=\"GET\",uri=~\"/api/products.*\"}[7d])))"
+    },
+    {
+      "name": "OBSERVED_BROWSE_FAIL_RATE",
+      "value": 0.015,
+      "source": "fallback",
+      "error": "",
+      "query": "(sum(rate(http_server_requests_seconds_count{job=\"product-service\",method=\"GET\",uri=~\"/api/products.*\",status=~\"5..\"}[7d])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"product-service\",method=\"GET\",uri=~\"/api/products.*\"}[7d])), 1))"
+    },
+    {
+      "name": "OBSERVED_CART_P95_MS",
+      "value": 260.0,
+      "source": "fallback",
+      "error": "",
+      "query": "1000 * histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"cart-service\",uri=~\"/api/cart.*\"}[7d])))"
+    },
+    {
+      "name": "OBSERVED_CART_FAIL_RATE",
+      "value": 0.02,
+      "source": "fallback",
+      "error": "",
+      "query": "(sum(rate(http_server_requests_seconds_count{job=\"cart-service\",uri=~\"/api/cart.*\",status=~\"5..\"}[7d])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"cart-service\",uri=~\"/api/cart.*\"}[7d])), 1))"
+    },
+    {
+      "name": "OBSERVED_CART_CONSISTENCY",
+      "value": 0.991,
+      "source": "fallback",
+      "error": "",
+      "query": "(sum(rate(http_server_requests_seconds_count{job=\"cart-service\",uri=~\"/api/cart.*\",status=~\"2..\"}[7d])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"cart-service\",uri=~\"/api/cart.*\"}[7d])), 1))"
+    },
+    {
+      "name": "OBSERVED_CHECKOUT_P95_MS",
+      "value": 360.0,
+      "source": "fallback",
+      "error": "",
+      "query": "1000 * histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job=\"order-service\",method=\"POST\",uri=\"/api/orders\"}[7d])))"
+    },
+    {
+      "name": "OBSERVED_CHECKOUT_FAIL_RATE",
+      "value": 0.03,
+      "source": "fallback",
+      "error": "",
+      "query": "(sum(rate(http_server_requests_seconds_count{job=\"order-service\",method=\"POST\",uri=\"/api/orders\",status=~\"5..\"}[7d])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"order-service\",method=\"POST\",uri=\"/api/orders\"}[7d])), 1))"
+    },
+    {
+      "name": "OBSERVED_CHECKOUT_SUCCESS",
+      "value": 0.965,
+      "source": "fallback",
+      "error": "",
+      "query": "(sum(rate(http_server_requests_seconds_count{job=\"order-service\",method=\"POST\",uri=\"/api/orders\",status=~\"2..\"}[7d])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"order-service\",method=\"POST\",uri=\"/api/orders\"}[7d])), 1))"
+    }
+  ]
+}

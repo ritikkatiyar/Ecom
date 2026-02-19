@@ -1,0 +1,66 @@
+name: ops-receiver-drill
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * 2"
+
+jobs:
+  production-receiver-drill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate production receiver configuration
+        env:
+          ALERTMANAGER_SLACK_API_URL: ${{ secrets.ALERTMANAGER_SLACK_API_URL }}
+          ALERTMANAGER_AUDIT_WEBHOOK_URL: ${{ secrets.ALERTMANAGER_AUDIT_WEBHOOK_URL }}
+          ALERTMANAGER_SLACK_CHANNEL_CRITICAL: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_CRITICAL || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_ORDER: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_ORDER || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_PAYMENT: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_PAYMENT || '' }}
+          ALERTMANAGER_PD_ROUTING_KEY_CRITICAL: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_CRITICAL }}
+          ALERTMANAGER_PD_ROUTING_KEY_ORDER: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_ORDER }}
+          ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION }}
+          ALERTMANAGER_PD_ROUTING_KEY_PAYMENT: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_PAYMENT }}
+          ALERTMANAGER_EMAIL_ORDER: ${{ vars.ALERTMANAGER_EMAIL_ORDER || '' }}
+          ALERTMANAGER_EMAIL_NOTIFICATION: ${{ vars.ALERTMANAGER_EMAIL_NOTIFICATION || '' }}
+          ALERTMANAGER_EMAIL_PAYMENT: ${{ vars.ALERTMANAGER_EMAIL_PAYMENT || '' }}
+        run: python ecom-back/scripts/validate_alertmanager_receivers.py
+
+      - name: Run weekly receiver drill
+        env:
+          OPS_RECEIVER_DRILL_MODE: ${{ vars.OPS_RECEIVER_DRILL_MODE || 'fire-alerts' }}
+          ALERTMANAGER_API_URL: ${{ secrets.PRODUCTION_ALERTMANAGER_API_URL }}
+          ALERTMANAGER_API_BEARER_TOKEN: ${{ secrets.PRODUCTION_ALERTMANAGER_API_BEARER_TOKEN }}
+          ALERTMANAGER_SLACK_CHANNEL_PAYMENT: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_PAYMENT || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_CRITICAL: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_CRITICAL || '' }}
+          ALERTMANAGER_PD_ROUTING_KEY_PAYMENT: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_PAYMENT }}
+          ALERTMANAGER_PD_ROUTING_KEY_CRITICAL: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_CRITICAL }}
+        run: python ecom-back/scripts/run_ops_receiver_drill.py
+
+      - name: Publish drill summary
+        if: always()
+        run: |
+          {
+            echo "## Ops Receiver Drill"
+            echo ""
+            cat build-artifacts/ops-receiver-drill-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload drill report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ops-receiver-drill-report
+          path: |
+            build-artifacts/ops-receiver-drill-report.json
+            build-artifacts/ops-receiver-drill-report.md
+            build-artifacts/alertmanager-receiver-validation-report.json
+            build-artifacts/alertmanager-receiver-validation-report.md

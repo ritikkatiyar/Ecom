@@ -5,6 +5,8 @@ const BASE_URL = __ENV.BASE_URL || "http://localhost:8083";
 const API_VERSION = __ENV.API_VERSION || "v1";
 const VUS = Number(__ENV.VUS || "120");
 const ITERATIONS = Number(__ENV.ITERATIONS || "6000");
+const P95_TARGET_MS = Number(__ENV.BROWSE_P95_MS || "180");
+const FAIL_RATE_MAX = __ENV.BROWSE_FAIL_RATE_MAX || "0.02";
 
 let seededProductIds = [];
 
@@ -19,8 +21,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ["rate<0.02"],
-    http_req_duration: ["p(95)<180"],
+    http_req_failed: [`rate<${FAIL_RATE_MAX}`],
+    http_req_duration: [`p(95)<${P95_TARGET_MS}`],
   },
 };
 

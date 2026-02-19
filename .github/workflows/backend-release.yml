@@ -117,6 +117,7 @@ jobs:
           python ecom-back/scripts/post_deploy_smoke.py
 
       - name: Trigger staging rollback on smoke failure
+        id: rollback_staging
         if: steps.smoke_staging.outcome == 'failure'
         env:
           ROLLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_WEBHOOK }}
@@ -130,6 +131,57 @@ jobs:
             exit 1
           fi
           python ecom-back/scripts/trigger_rollback.py
+
+      - name: Verify staging rollback callback
+        id: rollback_callback_staging
+        if: steps.smoke_staging.outcome == 'failure'
+        env:
+          CALLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_VERIFY_WEBHOOK }}
+          CALLBACK_METRICS_URL: ${{ secrets.STAGING_RELEASE_GATE_METRICS_URL }}
+          CALLBACK_EVENT: rollback_verification
+          CALLBACK_ENVIRONMENT: staging
+          CALLBACK_STATUS: triggered
+          CALLBACK_REF: ${{ github.ref }}
+          CALLBACK_RUN_ID: ${{ github.run_id }}
+          CALLBACK_DETAILS: smoke_failure_rollback_triggered
+        run: |
+          if [ -z "$CALLBACK_WEBHOOK_URL" ]; then
+            echo "STAGING_ROLLBACK_VERIFY_WEBHOOK not configured; cannot verify rollback callback."
+            exit 1
+          fi
+          python ecom-back/scripts/post_release_gate_callback.py
+
+      - name: Staging release gate summary
+        if: always()
+        run: |
+          {
+            echo "## Staging Release Gate"
+            echo ""
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| Smoke checks | ${{ steps.smoke_staging.outcome }} |"
+            echo "| Rollback trigger | ${{ steps.rollback_staging.outcome || 'skipped' }} |"
+            echo "| Rollback callback verification | ${{ steps.rollback_callback_staging.outcome || 'skipped' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          mkdir -p release-gate
+          cat > release-gate/staging-release-gate.json <<EOF
+          {
+            "environment": "staging",
+            "smokeOutcome": "${{ steps.smoke_staging.outcome }}",
+            "rollbackTriggerOutcome": "${{ steps.rollback_staging.outcome || 'skipped' }}",
+            "rollbackCallbackOutcome": "${{ steps.rollback_callback_staging.outcome || 'skipped' }}",
+            "runId": "${{ github.run_id }}",
+            "ref": "${{ github.ref }}"
+          }
+          EOF
+
+      - name: Upload staging release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-release-gate-report
+          path: release-gate/staging-release-gate.json
 
       - name: Enforce staging smoke gate
         if: steps.smoke_staging.outcome == 'failure'
@@ -183,6 +235,7 @@ jobs:
           python ecom-back/scripts/post_deploy_smoke.py
 
       - name: Trigger production rollback on smoke failure
+        id: rollback_production
         if: steps.smoke_production.outcome == 'failure'
         env:
           ROLLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_WEBHOOK }}
@@ -197,8 +250,269 @@ jobs:
           fi
           python ecom-back/scripts/trigger_rollback.py
 
+      - name: Verify production rollback callback
+        id: rollback_callback_production
+        if: steps.smoke_production.outcome == 'failure'
+        env:
+          CALLBACK_WEBHOOK_URL: ${{ secrets.PRODUCTION_ROLLBACK_VERIFY_WEBHOOK }}
+          CALLBACK_METRICS_URL: ${{ secrets.PRODUCTION_RELEASE_GATE_METRICS_URL }}
+          CALLBACK_EVENT: rollback_verification
+          CALLBACK_ENVIRONMENT: production
+          CALLBACK_STATUS: triggered
+          CALLBACK_REF: ${{ github.ref }}
+          CALLBACK_RUN_ID: ${{ github.run_id }}
+          CALLBACK_DETAILS: smoke_failure_rollback_triggered
+        run: |
+          if [ -z "$CALLBACK_WEBHOOK_URL" ]; then
+            echo "PRODUCTION_ROLLBACK_VERIFY_WEBHOOK not configured; cannot verify rollback callback."
+            exit 1
+          fi
+          python ecom-back/scripts/post_release_gate_callback.py
+
+      - name: Production release gate summary
+        if: always()
+        run: |
+          {
+            echo "## Production Release Gate"
+            echo ""
+            echo "| Check | Outcome |"
+            echo "|---|---|"
+            echo "| Smoke checks | ${{ steps.smoke_production.outcome }} |"
+            echo "| Rollback trigger | ${{ steps.rollback_production.outcome || 'skipped' }} |"
+            echo "| Rollback callback verification | ${{ steps.rollback_callback_production.outcome || 'skipped' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          mkdir -p release-gate
+          cat > release-gate/production-release-gate.json <<EOF
+          {
+            "environment": "production",
+            "smokeOutcome": "${{ steps.smoke_production.outcome }}",
+            "rollbackTriggerOutcome": "${{ steps.rollback_production.outcome || 'skipped' }}",
+            "rollbackCallbackOutcome": "${{ steps.rollback_callback_production.outcome || 'skipped' }}",
+            "runId": "${{ github.run_id }}",
+            "ref": "${{ github.ref }}"
+          }
+          EOF
+
+      - name: Upload production release gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-release-gate-report
+          path: release-gate/production-release-gate.json
+
       - name: Enforce production smoke gate
         if: steps.smoke_production.outcome == 'failure'
         run: |
           echo "Production smoke checks failed and rollback was triggered."
           exit 1
+
+  load-regression:
+    runs-on: ubuntu-latest
+    needs: [ deploy-staging ]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate load regression target secrets
+        env:
+          STAGING_BROWSE_BASE_URL: ${{ secrets.STAGING_BROWSE_BASE_URL }}
+          STAGING_CART_BASE_URL: ${{ secrets.STAGING_CART_BASE_URL }}
+          STAGING_ORDER_BASE_URL: ${{ secrets.STAGING_ORDER_BASE_URL }}
+          STAGING_PAYMENT_BASE_URL: ${{ secrets.STAGING_PAYMENT_BASE_URL }}
+        run: |
+          test -n "$STAGING_BROWSE_BASE_URL" || (echo "Missing STAGING_BROWSE_BASE_URL" && exit 1)
+          test -n "$STAGING_CART_BASE_URL" || (echo "Missing STAGING_CART_BASE_URL" && exit 1)
+          test -n "$STAGING_ORDER_BASE_URL" || (echo "Missing STAGING_ORDER_BASE_URL" && exit 1)
+          test -n "$STAGING_PAYMENT_BASE_URL" || (echo "Missing STAGING_PAYMENT_BASE_URL" && exit 1)
+
+      - name: Run browse baseline regression
+        env:
+          BASE_URL: ${{ secrets.STAGING_BROWSE_BASE_URL }}
+          API_VERSION: v1
+          VUS: 40
+          ITERATIONS: 2000
+          MAX_DURATION: 90s
+          BROWSE_P95_MS: 180
+          BROWSE_FAIL_RATE_MAX: 0.02
+        run: |
+          docker run --rm -i \
+            -e BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e BROWSE_P95_MS \
+            -e BROWSE_FAIL_RATE_MAX \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/browse-products.js
+
+      - name: Run cart baseline regression
+        env:
+          BASE_URL: ${{ secrets.STAGING_CART_BASE_URL }}
+          API_VERSION: v1
+          VUS: 35
+          ITERATIONS: 1800
+          MAX_DURATION: 90s
+          CART_P95_MS: 220
+          CART_FAIL_RATE_MAX: 0.03
+          CART_CONSISTENCY_MIN: 0.99
+        run: |
+          docker run --rm -i \
+            -e BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e CART_P95_MS \
+            -e CART_FAIL_RATE_MAX \
+            -e CART_CONSISTENCY_MIN \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/cart-operations.js
+
+      - name: Run checkout baseline regression
+        env:
+          ORDER_BASE_URL: ${{ secrets.STAGING_ORDER_BASE_URL }}
+          PAYMENT_BASE_URL: ${{ secrets.STAGING_PAYMENT_BASE_URL }}
+          API_VERSION: v1
+          VUS: 25
+          ITERATIONS: 1000
+          MAX_DURATION: 120s
+          INCLUDE_PAYMENT_INTENT: true
+          CHECKOUT_P95_MS: 320
+          CHECKOUT_FAIL_RATE_MAX: 0.05
+          CHECKOUT_SUCCESS_MIN: 0.95
+        run: |
+          docker run --rm -i \
+            -e ORDER_BASE_URL \
+            -e PAYMENT_BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e INCLUDE_PAYMENT_INTENT \
+            -e CHECKOUT_P95_MS \
+            -e CHECKOUT_FAIL_RATE_MAX \
+            -e CHECKOUT_SUCCESS_MIN \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/checkout-flow.js
+
+      - name: Load regression summary
+        if: always()
+        run: |
+          {
+            echo "## Staging Load Regression Gate"
+            echo ""
+            echo "- Browse/cart/checkout k6 baselines executed."
+            echo "- Thresholds are budget-enforced in each script."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  load-regression-production-read-heavy:
+    runs-on: ubuntu-latest
+    needs: [ deploy-production ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate production load target secrets
+        env:
+          PRODUCTION_BROWSE_BASE_URL: ${{ secrets.PRODUCTION_BROWSE_BASE_URL }}
+          PRODUCTION_CART_BASE_URL: ${{ secrets.PRODUCTION_CART_BASE_URL }}
+          PRODUCTION_ORDER_BASE_URL: ${{ secrets.PRODUCTION_ORDER_BASE_URL }}
+          PRODUCTION_PAYMENT_BASE_URL: ${{ secrets.PRODUCTION_PAYMENT_BASE_URL }}
+        run: |
+          test -n "$PRODUCTION_BROWSE_BASE_URL" || (echo "Missing PRODUCTION_BROWSE_BASE_URL" && exit 1)
+          test -n "$PRODUCTION_CART_BASE_URL" || (echo "Missing PRODUCTION_CART_BASE_URL" && exit 1)
+          test -n "$PRODUCTION_ORDER_BASE_URL" || (echo "Missing PRODUCTION_ORDER_BASE_URL" && exit 1)
+          test -n "$PRODUCTION_PAYMENT_BASE_URL" || (echo "Missing PRODUCTION_PAYMENT_BASE_URL" && exit 1)
+
+      - name: Run production browse regression (read-heavy profile)
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_BROWSE_BASE_URL }}
+          API_VERSION: v1
+          VUS: 30
+          ITERATIONS: 1500
+          MAX_DURATION: 120s
+          BROWSE_P95_MS: 276
+          BROWSE_FAIL_RATE_MAX: 0.03
+        run: |
+          docker run --rm -i \
+            -e BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e BROWSE_P95_MS \
+            -e BROWSE_FAIL_RATE_MAX \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/browse-products.js
+
+      - name: Run production cart regression (read-heavy profile)
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_CART_BASE_URL }}
+          API_VERSION: v1
+          VUS: 25
+          ITERATIONS: 1200
+          MAX_DURATION: 120s
+          CART_P95_MS: 312
+          CART_FAIL_RATE_MAX: 0.04
+          CART_CONSISTENCY_MIN: 0.98
+        run: |
+          docker run --rm -i \
+            -e BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e CART_P95_MS \
+            -e CART_FAIL_RATE_MAX \
+            -e CART_CONSISTENCY_MIN \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/cart-operations.js
+
+      - name: Run production checkout regression (conservative profile)
+        env:
+          ORDER_BASE_URL: ${{ secrets.PRODUCTION_ORDER_BASE_URL }}
+          PAYMENT_BASE_URL: ${{ secrets.PRODUCTION_PAYMENT_BASE_URL }}
+          API_VERSION: v1
+          VUS: 15
+          ITERATIONS: 500
+          MAX_DURATION: 120s
+          INCLUDE_PAYMENT_INTENT: false
+          CHECKOUT_P95_MS: 432
+          CHECKOUT_FAIL_RATE_MAX: 0.07
+          CHECKOUT_SUCCESS_MIN: 0.90
+        run: |
+          docker run --rm -i \
+            -e ORDER_BASE_URL \
+            -e PAYMENT_BASE_URL \
+            -e API_VERSION \
+            -e VUS \
+            -e ITERATIONS \
+            -e MAX_DURATION \
+            -e INCLUDE_PAYMENT_INTENT \
+            -e CHECKOUT_P95_MS \
+            -e CHECKOUT_FAIL_RATE_MAX \
+            -e CHECKOUT_SUCCESS_MIN \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            grafana/k6 run ecom-back/load-tests/k6/checkout-flow.js
+
+      - name: Production load regression summary
+        if: always()
+        run: |
+          {
+            echo "## Production Load Regression Gate"
+            echo ""
+            echo "- Read-heavy profile executed for browse/cart and conservative checkout profile."
+            echo "- Separate production budgets are enforced."
+          } >> "$GITHUB_STEP_SUMMARY"

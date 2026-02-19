@@ -1,0 +1,17 @@
+{
+  "reviewers": [
+    "ritikkatiyar"
+  ],
+  "rotation": {
+    "strategy": "iso_week_round_robin"
+  },
+  "issue": {
+    "title": "[Search Dataset] Refresh review due",
+    "labels": [
+      "search-dataset-review",
+      "search-service",
+      "ops"
+    ],
+    "autoCloseWhenNotDue": true
+  }
+}

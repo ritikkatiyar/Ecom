@@ -1,0 +1,68 @@
+{
+  "generatedAt": "2026-02-19T16:10:50.076650+00:00",
+  "changedMetrics": 3,
+  "suites": {
+    "browse": [
+      {
+        "name": "p95_ms",
+        "current": 260,
+        "observed": 230,
+        "recommended": 276.0,
+        "status": "changed"
+      },
+      {
+        "name": "fail_rate_max",
+        "current": 0.03,
+        "observed": 0.015,
+        "recommended": 0.03,
+        "status": "unchanged"
+      }
+    ],
+    "cart": [
+      {
+        "name": "p95_ms",
+        "current": 300,
+        "observed": 260,
+        "recommended": 312.0,
+        "status": "changed"
+      },
+      {
+        "name": "fail_rate_max",
+        "current": 0.04,
+        "observed": 0.02,
+        "recommended": 0.04,
+        "status": "unchanged"
+      },
+      {
+        "name": "consistency_min",
+        "current": 0.98,
+        "observed": 0.991,
+        "recommended": 0.98,
+        "status": "unchanged"
+      }
+    ],
+    "checkout": [
+      {
+        "name": "p95_ms",
+        "current": 420,
+        "observed": 360,
+        "recommended": 432.0,
+        "status": "changed"
+      },
+      {
+        "name": "fail_rate_max",
+        "current": 0.07,
+        "observed": 0.03,
+        "recommended": 0.07,
+        "status": "unchanged"
+      },
+      {
+        "name": "success_min",
+        "current": 0.9,
+        "observed": 0.965,
+        "recommended": 0.9,
+        "status": "unchanged"
+      }
+    ]
+  }
+}

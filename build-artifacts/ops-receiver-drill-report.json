@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-02-19T16:35:18.282754+00:00",
+  "mode": "verify-only",
+  "runId": "local",
+  "checks": [
+    {
+      "name": "ALERTMANAGER_API_URL",
+      "ok": true
+    },
+    {
+      "name": "ALERTMANAGER_SLACK_CHANNEL_PAYMENT",
+      "ok": true
+    },
+    {
+      "name": "ALERTMANAGER_SLACK_CHANNEL_CRITICAL",
+      "ok": true
+    },
+    {
+      "name": "ALERTMANAGER_PD_ROUTING_KEY_PAYMENT",
+      "ok": true
+    },
+    {
+      "name": "ALERTMANAGER_PD_ROUTING_KEY_CRITICAL",
+      "ok": true
+    }
+  ],
+  "missing": [],
+  "fireAttempted": false,
+  "fireSuccess": false,
+  "fireDetail": "skipped",
+  "status": "passed"
+}

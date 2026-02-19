@@ -80,3 +80,36 @@ groups:
         annotations:
           summary: "Payment provider requeue failures detected"
           description: "Provider dead-letter requeue failed at least twice in the last 15 minutes."
+
+      - alert: ReleaseGateRollbackCallbackFailuresPresent
+        expr: sum(increase(release_gate_rollback_callback_failure_total[6h])) >= 1
+        for: 2m
+        labels:
+          severity: warning
+          service: api-gateway
+          component: release-gate
+        annotations:
+          summary: "Release gate rollback callback failures detected"
+          description: "At least one rollback callback verification failure occurred in the last 6 hours."
+
+      - alert: ReleaseGateRollbackCallbackFailureRateCritical
+        expr: ((sum(increase(release_gate_rollback_callback_failure_total[24h])) / clamp_min(sum(increase(release_gate_rollback_callback_total[24h])), 1)) > 0.20) and (sum(increase(release_gate_rollback_callback_total[24h])) >= 3)
+        for: 5m
+        labels:
+          severity: critical
+          service: api-gateway
+          component: release-gate
+        annotations:
+          summary: "Release gate rollback callback failure rate is critical"
+          description: "Rollback callback failure rate exceeded 20% over 24h with at least 3 callback events."
+
+      - alert: ReleaseGateRollbackCallbackDrillMissing
+        expr: sum(increase(release_gate_rollback_callback_total[14d])) < 1
+        for: 30m
+        labels:
+          severity: warning
+          service: api-gateway
+          component: release-gate
+        annotations:
+          summary: "Release gate rollback callback drill signal missing"
+          description: "No rollback callback events were observed in the last 14 days; run a rollback drill to validate signal path."

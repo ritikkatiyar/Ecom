@@ -1,0 +1,69 @@
+name: load-budget-calibration
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+jobs:
+  calibrate-production-budgets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch observed telemetry from Prometheus
+        env:
+          PROMETHEUS_BASE_URL: ${{ secrets.PRODUCTION_PROMETHEUS_URL }}
+          PROMETHEUS_BEARER_TOKEN: ${{ secrets.PRODUCTION_PROMETHEUS_BEARER_TOKEN }}
+          FALLBACK_OBSERVED_BROWSE_P95_MS: ${{ vars.OBSERVED_BROWSE_P95_MS || '230' }}
+          FALLBACK_OBSERVED_BROWSE_FAIL_RATE: ${{ vars.OBSERVED_BROWSE_FAIL_RATE || '0.015' }}
+          FALLBACK_OBSERVED_CART_P95_MS: ${{ vars.OBSERVED_CART_P95_MS || '260' }}
+          FALLBACK_OBSERVED_CART_FAIL_RATE: ${{ vars.OBSERVED_CART_FAIL_RATE || '0.02' }}
+          FALLBACK_OBSERVED_CART_CONSISTENCY: ${{ vars.OBSERVED_CART_CONSISTENCY || '0.991' }}
+          FALLBACK_OBSERVED_CHECKOUT_P95_MS: ${{ vars.OBSERVED_CHECKOUT_P95_MS || '360' }}
+          FALLBACK_OBSERVED_CHECKOUT_FAIL_RATE: ${{ vars.OBSERVED_CHECKOUT_FAIL_RATE || '0.03' }}
+          FALLBACK_OBSERVED_CHECKOUT_SUCCESS: ${{ vars.OBSERVED_CHECKOUT_SUCCESS || '0.965' }}
+        run: |
+          python ecom-back/scripts/fetch_load_telemetry_from_prometheus.py
+          cat build-artifacts/load-budget-observed.env >> "$GITHUB_ENV"
+
+      - name: Run production budget calibration
+        env:
+          CURRENT_BROWSE_P95_MS: ${{ vars.CURRENT_BROWSE_P95_MS || '260' }}
+          CURRENT_BROWSE_FAIL_RATE_MAX: ${{ vars.CURRENT_BROWSE_FAIL_RATE_MAX || '0.03' }}
+          CURRENT_CART_P95_MS: ${{ vars.CURRENT_CART_P95_MS || '300' }}
+          CURRENT_CART_FAIL_RATE_MAX: ${{ vars.CURRENT_CART_FAIL_RATE_MAX || '0.04' }}
+          CURRENT_CART_CONSISTENCY_MIN: ${{ vars.CURRENT_CART_CONSISTENCY_MIN || '0.98' }}
+          CURRENT_CHECKOUT_P95_MS: ${{ vars.CURRENT_CHECKOUT_P95_MS || '420' }}
+          CURRENT_CHECKOUT_FAIL_RATE_MAX: ${{ vars.CURRENT_CHECKOUT_FAIL_RATE_MAX || '0.07' }}
+          CURRENT_CHECKOUT_SUCCESS_MIN: ${{ vars.CURRENT_CHECKOUT_SUCCESS_MIN || '0.90' }}
+          LATENCY_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_LATENCY_MARGIN_FACTOR || '1.2' }}
+          ERROR_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_ERROR_MARGIN_FACTOR || '1.5' }}
+          CONSISTENCY_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_CONSISTENCY_MARGIN_FACTOR || '0.995' }}
+          SUCCESS_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_SUCCESS_MARGIN_FACTOR || '0.99' }}
+        run: python ecom-back/scripts/calibrate_load_budgets.py
+
+      - name: Publish calibration summary
+        run: |
+          {
+            echo "## Production Load Budget Calibration"
+            echo ""
+            cat build-artifacts/load-budget-calibration-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload calibration report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-budget-calibration-report
+          path: |
+            build-artifacts/load-budget-calibration-report.json
+            build-artifacts/load-budget-calibration-report.md
+            build-artifacts/load-budget-telemetry-report.json
+            build-artifacts/load-budget-telemetry-report.md
+            build-artifacts/load-budget-observed.env

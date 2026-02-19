@@ -6,6 +6,9 @@ const BASE_URL = __ENV.BASE_URL || "http://localhost:8085";
 const API_VERSION = __ENV.API_VERSION || "v1";
 const VUS = Number(__ENV.VUS || "100");
 const ITERATIONS = Number(__ENV.ITERATIONS || "5000");
+const P95_TARGET_MS = Number(__ENV.CART_P95_MS || "220");
+const FAIL_RATE_MAX = __ENV.CART_FAIL_RATE_MAX || "0.03";
+const CONSISTENCY_MIN = __ENV.CART_CONSISTENCY_MIN || "0.99";
 
 const cartConsistencyRate = new Rate("cart_consistency_rate");
 
@@ -20,9 +23,9 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ["rate<0.03"],
-    http_req_duration: ["p(95)<220"],
-    cart_consistency_rate: ["rate>0.99"],
+    http_req_failed: [`rate<${FAIL_RATE_MAX}`],
+    http_req_duration: [`p(95)<${P95_TARGET_MS}`],
+    cart_consistency_rate: [`rate>${CONSISTENCY_MIN}`],
   },
 };
 

@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-02-19T16:39:49.136937+00:00",
+  "staging": {
+    "environment": "staging",
+    "present": false,
+    "status": "missing",
+    "smokeOutcome": "missing",
+    "rollbackTriggerOutcome": "missing",
+    "rollbackCallbackOutcome": "missing",
+    "notes": "artifact_missing"
+  },
+  "production": {
+    "environment": "production",
+    "present": false,
+    "status": "missing",
+    "smokeOutcome": "missing",
+    "rollbackTriggerOutcome": "missing",
+    "rollbackCallbackOutcome": "missing",
+    "notes": "artifact_missing"
+  },
+  "recommendedDeltas": [
+    {
+      "setting": "ReleaseGateRollbackCallbackDrillMissing window",
+      "current": "14d",
+      "recommended": "Keep 14d and schedule explicit staged/prod rollback drills this cycle.",
+      "reason": "Rollback path not exercised in both environments."
+    }
+  ]
+}

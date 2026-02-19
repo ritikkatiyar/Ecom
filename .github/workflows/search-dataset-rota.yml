@@ -1,0 +1,194 @@
+name: search-dataset-rota
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"
+
+jobs:
+  rotate-reviewer:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assign reviewer by cadence
+        id: rota
+        env:
+          SEARCH_DATASET_REVIEWERS: ${{ vars.SEARCH_DATASET_REVIEWERS }}
+          SEARCH_DATASET_MIN_REVIEWERS: ${{ vars.SEARCH_DATASET_MIN_REVIEWERS || '2' }}
+        run: |
+          python ecom-back/scripts/assign_search_dataset_reviewer.py \
+            --reviewers-csv "$SEARCH_DATASET_REVIEWERS" \
+            --min-reviewers "$SEARCH_DATASET_MIN_REVIEWERS" \
+            --report-out build-artifacts/search-dataset-rota-report.md > build-artifacts/search-dataset-rota.json
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data = json.loads(Path("build-artifacts/search-dataset-rota.json").read_text(encoding="utf-8"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"due={str(data['due']).lower()}\n")
+              out.write(f"stale={str(data['stale']).lower()}\n")
+              out.write(f"reviewer={data['reviewer']}\n")
+              out.write(f"reviewer_count={data['reviewerCount']}\n")
+              out.write(f"reviewer_pool_healthy={str(data['reviewerPoolHealthy']).lower()}\n")
+              out.write(f"min_reviewers_required={data['minReviewersRequired']}\n")
+              out.write(f"reviewer_pool={','.join(data['reviewerPool'])}\n")
+              out.write(f"age_days={data['ageDays']}\n")
+              out.write(f"cadence_days={data['cadenceDays']}\n")
+              out.write(f"dataset_version={data['datasetVersion']}\n")
+              out.write(f"last_refreshed={data['lastRefreshedAt']}\n")
+              out.write(f"next_due={data['nextReviewDueAt']}\n")
+              out.write(f"issue_title={data['issueTitle']}\n")
+              out.write(f"issue_labels={','.join(data['issueLabels'])}\n")
+              out.write(f"auto_close_when_not_due={str(data['autoCloseWhenNotDue']).lower()}\n")
+          PY
+
+      - name: Upload rota report
+        uses: actions/upload-artifact@v4
+        with:
+          name: search-dataset-rota-report
+          path: |
+            build-artifacts/search-dataset-rota-report.md
+            build-artifacts/search-dataset-rota.json
+
+      - name: Rota summary
+        run: |
+          {
+            echo "## Search Dataset Rotation"
+            echo ""
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| Dataset version | ${{ steps.rota.outputs.dataset_version }} |"
+            echo "| Last refreshed | ${{ steps.rota.outputs.last_refreshed }} |"
+            echo "| Age days | ${{ steps.rota.outputs.age_days }} |"
+            echo "| Cadence days | ${{ steps.rota.outputs.cadence_days }} |"
+            echo "| Due | ${{ steps.rota.outputs.due }} |"
+            echo "| Stale | ${{ steps.rota.outputs.stale }} |"
+            echo "| Reviewer | ${{ steps.rota.outputs.reviewer || 'unassigned' }} |"
+            echo "| Reviewer pool healthy | ${{ steps.rota.outputs.reviewer_pool_healthy }} |"
+            echo "| Min reviewers required | ${{ steps.rota.outputs.min_reviewers_required }} |"
+            echo "| Reviewer pool | ${{ steps.rota.outputs.reviewer_pool || 'none' }} |"
+            echo "| Next due | ${{ steps.rota.outputs.next_due }} |"
+            echo "| Auto-close policy | ${{ steps.rota.outputs.auto_close_when_not_due }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce reviewer pool size policy
+        run: |
+          if [ "${{ steps.rota.outputs.reviewer_pool_healthy }}" != "true" ]; then
+            echo "Reviewer pool is below required minimum (${{ steps.rota.outputs.min_reviewers_required }}). Current pool: ${{ steps.rota.outputs.reviewer_pool || 'none' }}"
+            exit 1
+          fi
+
+      - name: Validate reviewer assignment permissions
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pool = `${{ steps.rota.outputs.reviewer_pool }}`.split(",").map(s => s.trim()).filter(Boolean);
+            if (pool.length === 0) {
+              core.setFailed("Reviewer pool is empty.");
+              return;
+            }
+            const acceptable = new Set(["admin", "maintain", "write", "push", "triage"]);
+            const { owner, repo } = context.repo;
+            let failures = [];
+            for (const reviewer of pool) {
+              try {
+                const res = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner,
+                  repo,
+                  username: reviewer
+                });
+                const perm = (res.data.permission || "").toLowerCase();
+                if (!acceptable.has(perm)) {
+                  failures.push(`${reviewer}: permission=${perm || "unknown"}`);
+                }
+              } catch (e) {
+                failures.push(`${reviewer}: ${e.status || "error"} ${e.message}`);
+              }
+            }
+            if (failures.length > 0) {
+              core.setFailed(`Reviewer permission validation failed: ${failures.join("; ")}`);
+            } else {
+              core.info(`Reviewer permission validation passed for ${pool.length} reviewer(s).`);
+            }
+
+      - name: Open/Update dataset review issue when due
+        if: steps.rota.outputs.due == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviewer = `${{ steps.rota.outputs.reviewer }}`.trim();
+            const title = `${{ steps.rota.outputs.issue_title }}`.trim();
+            const labels = `${{ steps.rota.outputs.issue_labels }}`.split(",").map(s => s.trim()).filter(Boolean);
+            const reviewerPool = `${{ steps.rota.outputs.reviewer_pool }}`.split(",").map(s => s.trim()).filter(Boolean);
+            const body = [
+              "Search relevance dataset review is due based on cadence.",
+              "",
+              `- Dataset version: \`${{ steps.rota.outputs.dataset_version }}\``,
+              `- Last refreshed: \`${{ steps.rota.outputs.last_refreshed }}\``,
+              `- Age days: \`${{ steps.rota.outputs.age_days }}\``,
+              `- Cadence days: \`${{ steps.rota.outputs.cadence_days }}\``,
+              `- Next due: \`${{ steps.rota.outputs.next_due }}\``,
+              `- Assigned reviewer: \`${reviewer || "unassigned"}\``,
+              `- Reviewer pool: \`${reviewerPool.join(", ") || "none"}\``,
+              "",
+              "Action: refresh dataset if stale, validate relevance score, and update metadata.",
+            ].join("\n");
+
+            const { owner, repo } = context.repo;
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              labels: "search-dataset-review",
+              per_page: 100
+            });
+            const match = existing.find(i => i.title === title);
+            if (match) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: match.number,
+                body: `Cadence check still due. Reviewer: @${reviewer || "unassigned"}`
+              });
+              if (reviewer) {
+                try {
+                  await github.rest.issues.addAssignees({ owner, repo, issue_number: match.number, assignees: [reviewer] });
+                } catch (e) {
+                  core.warning(`Could not assign reviewer ${reviewer}: ${e.message}`);
+                }
+              }
+            } else {
+              const payload = { owner, repo, title, body, labels };
+              if (reviewer) payload.assignees = [reviewer];
+              await github.rest.issues.create(payload);
+            }
+
+      - name: Auto-close dataset review issue when not due
+        if: steps.rota.outputs.due == 'false' && steps.rota.outputs.auto_close_when_not_due == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `${{ steps.rota.outputs.issue_title }}`.trim();
+            const labels = `${{ steps.rota.outputs.issue_labels }}`.split(",").map(s => s.trim()).filter(Boolean);
+            const primaryLabel = labels[0] || "search-dataset-review";
+            const { owner, repo } = context.repo;
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: "open", labels: primaryLabel, per_page: 100
+            });
+            const match = openIssues.find(i => i.title === title);
+            if (!match) {
+              core.info("No open due-review issue found; nothing to close.");
+              return;
+            }
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: match.number,
+              body: "Dataset is currently within refresh cadence. Auto-closing this review issue."
+            });
+            await github.rest.issues.update({
+              owner, repo, issue_number: match.number, state: "closed"
+            });

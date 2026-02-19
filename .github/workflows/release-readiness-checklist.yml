@@ -1,0 +1,106 @@
+name: release-readiness-checklist
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * 3"
+
+jobs:
+  readiness-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate production receiver configuration
+        env:
+          ALERTMANAGER_SLACK_API_URL: ${{ secrets.ALERTMANAGER_SLACK_API_URL }}
+          ALERTMANAGER_AUDIT_WEBHOOK_URL: ${{ secrets.ALERTMANAGER_AUDIT_WEBHOOK_URL }}
+          ALERTMANAGER_SLACK_CHANNEL_CRITICAL: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_CRITICAL || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_ORDER: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_ORDER || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_PAYMENT: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_PAYMENT || '' }}
+          ALERTMANAGER_PD_ROUTING_KEY_CRITICAL: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_CRITICAL }}
+          ALERTMANAGER_PD_ROUTING_KEY_ORDER: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_ORDER }}
+          ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION }}
+          ALERTMANAGER_PD_ROUTING_KEY_PAYMENT: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_PAYMENT }}
+          ALERTMANAGER_EMAIL_ORDER: ${{ vars.ALERTMANAGER_EMAIL_ORDER || '' }}
+          ALERTMANAGER_EMAIL_NOTIFICATION: ${{ vars.ALERTMANAGER_EMAIL_NOTIFICATION || '' }}
+          ALERTMANAGER_EMAIL_PAYMENT: ${{ vars.ALERTMANAGER_EMAIL_PAYMENT || '' }}
+        run: python ecom-back/scripts/validate_alertmanager_receivers.py
+
+      - name: Run ops receiver drill (readiness mode)
+        env:
+          OPS_RECEIVER_DRILL_MODE: ${{ vars.READINESS_DRILL_MODE || 'verify-only' }}
+          ALERTMANAGER_API_URL: ${{ secrets.PRODUCTION_ALERTMANAGER_API_URL }}
+          ALERTMANAGER_API_BEARER_TOKEN: ${{ secrets.PRODUCTION_ALERTMANAGER_API_BEARER_TOKEN }}
+          ALERTMANAGER_SLACK_CHANNEL_PAYMENT: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_PAYMENT || '' }}
+          ALERTMANAGER_SLACK_CHANNEL_CRITICAL: ${{ vars.ALERTMANAGER_SLACK_CHANNEL_CRITICAL || '' }}
+          ALERTMANAGER_PD_ROUTING_KEY_PAYMENT: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_PAYMENT }}
+          ALERTMANAGER_PD_ROUTING_KEY_CRITICAL: ${{ secrets.ALERTMANAGER_PD_ROUTING_KEY_CRITICAL }}
+        run: python ecom-back/scripts/run_ops_receiver_drill.py
+
+      - name: Fetch telemetry + calibrate load budgets
+        env:
+          PROMETHEUS_BASE_URL: ${{ secrets.PRODUCTION_PROMETHEUS_URL }}
+          PROMETHEUS_BEARER_TOKEN: ${{ secrets.PRODUCTION_PROMETHEUS_BEARER_TOKEN }}
+          FALLBACK_OBSERVED_BROWSE_P95_MS: ${{ vars.OBSERVED_BROWSE_P95_MS || '230' }}
+          FALLBACK_OBSERVED_BROWSE_FAIL_RATE: ${{ vars.OBSERVED_BROWSE_FAIL_RATE || '0.015' }}
+          FALLBACK_OBSERVED_CART_P95_MS: ${{ vars.OBSERVED_CART_P95_MS || '260' }}
+          FALLBACK_OBSERVED_CART_FAIL_RATE: ${{ vars.OBSERVED_CART_FAIL_RATE || '0.02' }}
+          FALLBACK_OBSERVED_CART_CONSISTENCY: ${{ vars.OBSERVED_CART_CONSISTENCY || '0.991' }}
+          FALLBACK_OBSERVED_CHECKOUT_P95_MS: ${{ vars.OBSERVED_CHECKOUT_P95_MS || '360' }}
+          FALLBACK_OBSERVED_CHECKOUT_FAIL_RATE: ${{ vars.OBSERVED_CHECKOUT_FAIL_RATE || '0.03' }}
+          FALLBACK_OBSERVED_CHECKOUT_SUCCESS: ${{ vars.OBSERVED_CHECKOUT_SUCCESS || '0.965' }}
+          CURRENT_BROWSE_P95_MS: ${{ vars.CURRENT_BROWSE_P95_MS || '276' }}
+          CURRENT_BROWSE_FAIL_RATE_MAX: ${{ vars.CURRENT_BROWSE_FAIL_RATE_MAX || '0.03' }}
+          CURRENT_CART_P95_MS: ${{ vars.CURRENT_CART_P95_MS || '312' }}
+          CURRENT_CART_FAIL_RATE_MAX: ${{ vars.CURRENT_CART_FAIL_RATE_MAX || '0.04' }}
+          CURRENT_CART_CONSISTENCY_MIN: ${{ vars.CURRENT_CART_CONSISTENCY_MIN || '0.98' }}
+          CURRENT_CHECKOUT_P95_MS: ${{ vars.CURRENT_CHECKOUT_P95_MS || '432' }}
+          CURRENT_CHECKOUT_FAIL_RATE_MAX: ${{ vars.CURRENT_CHECKOUT_FAIL_RATE_MAX || '0.07' }}
+          CURRENT_CHECKOUT_SUCCESS_MIN: ${{ vars.CURRENT_CHECKOUT_SUCCESS_MIN || '0.90' }}
+          LATENCY_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_LATENCY_MARGIN_FACTOR || '1.2' }}
+          ERROR_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_ERROR_MARGIN_FACTOR || '1.5' }}
+          CONSISTENCY_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_CONSISTENCY_MARGIN_FACTOR || '0.995' }}
+          SUCCESS_MARGIN_FACTOR: ${{ vars.LOAD_BUDGET_SUCCESS_MARGIN_FACTOR || '0.99' }}
+        run: |
+          python ecom-back/scripts/fetch_load_telemetry_from_prometheus.py
+          cat build-artifacts/load-budget-observed.env >> "$GITHUB_ENV"
+          python ecom-back/scripts/calibrate_load_budgets.py
+
+      - name: Evaluate release-gate drill deltas
+        run: python ecom-back/scripts/evaluate_release_gate_drills.py --out-dir build-artifacts
+
+      - name: Enforce release readiness checklist
+        run: python ecom-back/scripts/check_release_readiness.py
+
+      - name: Publish readiness summary
+        if: always()
+        run: |
+          {
+            echo "## Release Readiness Checklist"
+            echo ""
+            cat build-artifacts/release-readiness-checklist-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-readiness-checklist-report
+          path: |
+            build-artifacts/release-readiness-checklist-report.json
+            build-artifacts/release-readiness-checklist-report.md
+            build-artifacts/alertmanager-receiver-validation-report.json
+            build-artifacts/alertmanager-receiver-validation-report.md
+            build-artifacts/ops-receiver-drill-report.json
+            build-artifacts/ops-receiver-drill-report.md
+            build-artifacts/load-budget-telemetry-report.json
+            build-artifacts/load-budget-calibration-report.json
+            build-artifacts/release-gate-drill-delta-report.json
