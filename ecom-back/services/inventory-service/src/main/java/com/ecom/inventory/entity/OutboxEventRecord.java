@@ -13,6 +13,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,7 +41,8 @@ public class OutboxEventRecord implements RetryableOutboxRecord {
     @Column(nullable = false, length = 64)
     private String eventType;
 
-    @Column(nullable = false, length = 20000)
+    @Lob
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String payload;
 
     @Enumerated(EnumType.STRING)
@@ -64,6 +66,11 @@ public class OutboxEventRecord implements RetryableOutboxRecord {
     @Override
     public void markSent() {
         this.status = OutboxStatus.SENT;
+    }
+
+    @Override
+    public void setAttempts(Integer attempts) {
+        this.attempts = attempts == null ? 0 : attempts;
     }
 
     @Override

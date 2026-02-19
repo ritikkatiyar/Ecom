@@ -1,0 +1,39 @@
+name: backend-quality
+
+on:
+  pull_request:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build shared modules
+        run: |
+          mvn -f ecom-back/common/common-core/pom.xml -DskipTests install
+          mvn -f ecom-back/common/common-events/pom.xml -DskipTests install
+          mvn -f ecom-back/common/common-security/pom.xml -DskipTests install
+
+      - name: Run critical service tests
+        run: |
+          mvn -f ecom-back/services/search-service/pom.xml test
+          mvn -f ecom-back/services/inventory-service/pom.xml test
+          mvn -f ecom-back/api-gateway/pom.xml test
+
+      - name: Validate search relevance dataset freshness
+        run: python ecom-back/scripts/check_search_dataset_freshness.py
+
+      - name: Validate service API docs structure
+        run: python ecom-back/scripts/check_api_docs.py

@@ -50,3 +50,33 @@ groups:
         annotations:
           summary: "Notification delivery failure rate is high"
           description: "Failure rate exceeded 5% in the last 15 minutes."
+
+      - alert: PaymentProviderRetrySpike
+        expr: increase(payment_provider_retry_total[10m]) >= 20
+        for: 3m
+        labels:
+          severity: warning
+          service: payment-service
+        annotations:
+          summary: "Payment provider retries are spiking"
+          description: "Payment provider retries crossed warning threshold in the last 10 minutes."
+
+      - alert: PaymentProviderDlqIncrease
+        expr: increase(payment_provider_dlq_total[10m]) >= 1
+        for: 2m
+        labels:
+          severity: critical
+          service: payment-service
+        annotations:
+          summary: "Payment provider DLQ entries detected"
+          description: "At least one payment intent was moved to provider DLQ in the last 10 minutes."
+
+      - alert: PaymentProviderRequeueFailures
+        expr: increase(payment_provider_requeue_total{result="failed"}[15m]) >= 2
+        for: 3m
+        labels:
+          severity: warning
+          service: payment-service
+        annotations:
+          summary: "Payment provider requeue failures detected"
+          description: "Provider dead-letter requeue failed at least twice in the last 15 minutes."

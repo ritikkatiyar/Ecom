@@ -1,16 +1,19 @@
 package com.ecom.payment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -18,8 +21,12 @@ import com.ecom.payment.dto.CreatePaymentIntentRequest;
 import com.ecom.payment.dto.PaymentWebhookRequest;
 import com.ecom.payment.entity.PaymentRecord;
 import com.ecom.payment.entity.PaymentStatus;
+import com.ecom.payment.entity.ProviderDeadLetterRecord;
 import com.ecom.payment.repository.PaymentRepository;
+import com.ecom.payment.repository.ProviderDeadLetterRepository;
 import com.ecom.payment.repository.WebhookEventRepository;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -31,15 +38,29 @@ class PaymentServiceTest {
     private WebhookEventRepository webhookEventRepository;
 
     @Mock
+    private ProviderDeadLetterRepository deadLetterRepository;
+
+    @Mock
     private OutboxService outboxService;
 
-    @InjectMocks
-    private PaymentService paymentService = new PaymentService(
-            paymentRepository,
-            webhookEventRepository,
-            outboxService,
-            "payment.authorized.v1",
-            "payment.failed.v1");
+    @Mock
+    private PaymentProviderGateway providerGateway;
+
+    private PaymentService paymentService;
+
+    @BeforeEach
+    void setUp() {
+        paymentService = new PaymentService(
+                paymentRepository,
+                webhookEventRepository,
+                deadLetterRepository,
+                outboxService,
+                providerGateway,
+                new SimpleMeterRegistry(),
+                "payment.authorized.v1",
+                "payment.failed.v1",
+                3);
+    }
 
     @Test
     void createIntentIsIdempotent() {
@@ -81,5 +102,55 @@ class PaymentServiceTest {
 
         assertEquals("processed", status);
         assertEquals(PaymentStatus.AUTHORIZED, record.getStatus());
+    }
+
+    @Test
+    void createIntentMovesToDeadLetterWhenProviderIsUnavailable() {
+        CreatePaymentIntentRequest request =
+                new CreatePaymentIntentRequest("ord_dlq", 3L, new BigDecimal("55.00"), "INR", "idem-dlq");
+
+        when(paymentRepository.findByIdempotencyKey("idem-dlq")).thenReturn(Optional.empty());
+        when(providerGateway.createPaymentId(any(), any(), any()))
+                .thenThrow(new IllegalStateException("provider outage"));
+
+        assertThrows(IllegalStateException.class, () -> paymentService.createIntent(request));
+        verify(providerGateway, times(3)).createPaymentId(any(), any(), any());
+        verify(deadLetterRepository, times(1)).save(any(ProviderDeadLetterRecord.class));
+    }
+
+    @Test
+    void requeueProviderDeadLetterCreatesPendingPayment() {
+        ProviderDeadLetterRecord deadLetter = new ProviderDeadLetterRecord();
+        deadLetter.setId(11L);
+        deadLetter.setIdempotencyKey("idem-requeue");
+        deadLetter.setOrderId("ord_requeue");
+        deadLetter.setUserId(10L);
+        deadLetter.setAmount(new BigDecimal("30.00"));
+        deadLetter.setCurrency("INR");
+        deadLetter.setAttempts(3);
+        deadLetter.setStatus("PENDING");
+
+        PaymentRecord saved = new PaymentRecord();
+        saved.setId("pay_requeue");
+        saved.setOrderId("ord_requeue");
+        saved.setUserId(10L);
+        saved.setAmount(new BigDecimal("30.00"));
+        saved.setCurrency("INR");
+        saved.setStatus(PaymentStatus.PENDING);
+        saved.setIdempotencyKey("idem-requeue");
+        saved.setProviderPaymentId("rzp_new");
+        saved.setCreatedAt(Instant.now());
+        saved.setUpdatedAt(Instant.now());
+
+        when(deadLetterRepository.findById(11L)).thenReturn(Optional.of(deadLetter));
+        when(paymentRepository.findByIdempotencyKey("idem-requeue")).thenReturn(Optional.empty());
+        when(providerGateway.createPaymentId(any(), any(), any())).thenReturn("rzp_new");
+        when(paymentRepository.save(any(PaymentRecord.class))).thenReturn(saved);
+
+        var response = paymentService.requeueProviderDeadLetter(11L);
+
+        assertEquals("pay_requeue", response.paymentId());
+        assertEquals("PENDING", response.status());
+        verify(deadLetterRepository, times(1)).save(any(ProviderDeadLetterRecord.class));
     }
 }

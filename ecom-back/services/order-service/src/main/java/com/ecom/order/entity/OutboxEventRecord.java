@@ -67,6 +67,11 @@ public class OutboxEventRecord implements RetryableOutboxRecord {
     }
 
     @Override
+    public void setAttempts(Integer attempts) {
+        this.attempts = attempts == null ? 0 : attempts;
+    }
+
+    @Override
     public void markPending() {
         this.status = OutboxStatus.PENDING;
     }

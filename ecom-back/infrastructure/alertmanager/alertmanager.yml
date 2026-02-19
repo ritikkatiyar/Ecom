@@ -1,0 +1,129 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: ${ALERTMANAGER_SLACK_API_URL}
+  pagerduty_url: ${ALERTMANAGER_PAGERDUTY_URL}
+  smtp_smarthost: ${ALERTMANAGER_SMTP_SMARTHOST}
+  smtp_from: ${ALERTMANAGER_SMTP_FROM}
+  smtp_auth_username: ${ALERTMANAGER_SMTP_USERNAME}
+  smtp_auth_password: ${ALERTMANAGER_SMTP_PASSWORD}
+
+route:
+  receiver: platform-default
+  group_by: ["alertname", "service", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 2h
+  routes:
+    - matchers:
+        - service="order-service"
+      receiver: team-order-warning
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: team-order-critical
+    - matchers:
+        - service="notification-service"
+      receiver: team-notification-warning
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: team-notification-critical
+    - matchers:
+        - service="payment-service"
+      receiver: team-payment-warning
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: team-payment-critical
+    - matchers:
+        - severity="critical"
+      receiver: incident-critical
+
+receivers:
+  - name: platform-default
+    webhook_configs:
+      - url: ${ALERTMANAGER_AUDIT_WEBHOOK_URL}
+        send_resolved: true
+
+  - name: incident-critical
+    pagerduty_configs:
+      - routing_key: ${ALERTMANAGER_PD_ROUTING_KEY_CRITICAL}
+        severity: critical
+        send_resolved: true
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_CRITICAL}
+        title: "[CRITICAL] {{ .CommonLabels.alertname }} ({{ .CommonLabels.service }})"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+
+  - name: team-order-warning
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_ORDER}
+        title: "[WARN] {{ .CommonLabels.alertname }} (order-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_ORDER}
+        send_resolved: true
+
+  - name: team-order-critical
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_ORDER}
+        title: "[CRITICAL] {{ .CommonLabels.alertname }} (order-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    pagerduty_configs:
+      - routing_key: ${ALERTMANAGER_PD_ROUTING_KEY_ORDER}
+        severity: critical
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_ORDER}
+        send_resolved: true
+
+  - name: team-notification-warning
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION}
+        title: "[WARN] {{ .CommonLabels.alertname }} (notification-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_NOTIFICATION}
+        send_resolved: true
+
+  - name: team-notification-critical
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_NOTIFICATION}
+        title: "[CRITICAL] {{ .CommonLabels.alertname }} (notification-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    pagerduty_configs:
+      - routing_key: ${ALERTMANAGER_PD_ROUTING_KEY_NOTIFICATION}
+        severity: critical
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_NOTIFICATION}
+        send_resolved: true
+
+  - name: team-payment-warning
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_PAYMENT}
+        title: "[WARN] {{ .CommonLabels.alertname }} (payment-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_PAYMENT}
+        send_resolved: true
+
+  - name: team-payment-critical
+    slack_configs:
+      - channel: ${ALERTMANAGER_SLACK_CHANNEL_PAYMENT}
+        title: "[CRITICAL] {{ .CommonLabels.alertname }} (payment-service)"
+        text: "{{ .CommonAnnotations.summary }}\n{{ .CommonAnnotations.description }}"
+        send_resolved: true
+    pagerduty_configs:
+      - routing_key: ${ALERTMANAGER_PD_ROUTING_KEY_PAYMENT}
+        severity: critical
+        send_resolved: true
+    email_configs:
+      - to: ${ALERTMANAGER_EMAIL_PAYMENT}
+        send_resolved: true

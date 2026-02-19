@@ -1,14 +1,27 @@
 # Service Detailed Progress
 
-Last updated: 2026-02-14
+Last updated: 2026-02-19
 
 ## Change Log (Dated)
 - 2026-02-14: Added gateway standardized JSON error payloads and route policy tuning.
 - 2026-02-14: Added gateway route-level circuit breaker with fallback endpoints and Resilience4j policies.
 - 2026-02-14: Added search relevance target threshold evaluation and expanded calibration dataset.
+- 2026-02-19: Added search relevance dataset health endpoint and contract/unit tests for evaluation + refresh cadence workflow.
 - 2026-02-14: Tuned notification alert thresholds in Prometheus and Grafana.
 - 2026-02-14: Added scheduled outbox/dedup cleanup automation across order/payment/inventory/notification/search services.
 - 2026-02-14: Expanded observability baseline with Prometheus + Zipkin tracing dependencies and trace-log correlation config across active services.
+- 2026-02-19: Added search dataset refresh-health workflow + contract/unit tests and wired Prometheus to Alertmanager with an alert drill runbook.
+- 2026-02-19: Added inventory reservation expiry scheduler + concurrency contract tests and established `API_DOCS.md` files in each service/gateway.
+- 2026-02-19: Added API gateway edge-route contract tests (version guard, JWT public/protected route policy, fallback payload contract).
+- 2026-02-19: Added CI quality workflow (`backend-quality.yml`) with service test gates, search dataset freshness check, and API docs structure validation.
+- 2026-02-19: Added inventory integration tests with Testcontainers (real MySQL + Kafka) for contention and consumer dedup scenarios; fixed inventory outbox payload DDL to MySQL-safe `TEXT`.
+- 2026-02-19: Added payment webhook HMAC signature verification and failure-injection tests (missing/invalid signature and malformed payload).
+- 2026-02-19: Added staged backend release pipeline (`backend-release.yml`) with promotion gates for staging/production environments and artifact manifest validation.
+- 2026-02-19: Added flash-sale k6 load-test suite with SLO gates (`p95`, success-rate, server-error-rate, oversell invariant) and PowerShell runner.
+- 2026-02-19: Added payment provider outage drill support with retry-to-DLQ flow, dead-letter requeue endpoints, outage toggle APIs, and observability counters.
+- 2026-02-19: Added post-deploy smoke-check and rollback trigger automation to release pipeline, plus deploy runbook (`DEPLOY_SMOKE_ROLLBACK.md`).
+- 2026-02-19: Added baseline k6 suites for browse/cart/checkout with defined performance budgets and unified runner script.
+- 2026-02-19: Added payment outage alert rules and Alertmanager payment receiver routing, with dedicated outage drill runbook (`PAYMENT_OUTAGE_DRILL.md`).
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -29,9 +42,21 @@ Last updated: 2026-02-14
   - Resilience4j circuit breaker and time limiter baseline configuration.
   - Zipkin tracing export and trace-log correlation pattern (`traceId`, `spanId`).
 - Verification:
-  - `api-gateway` compiles after circuit-breaker + fallback policy updates.
+  - `api-gateway` tests pass for version-guard, JWT route policy, and fallback contract behavior.
 - Pending:
   - Edge-route contract tests for public/protected behavior.
+
+## Observability Infra (`ecom-back/infrastructure`)
+- Components:
+  - Prometheus alerting now routes to Alertmanager (`prometheus.yml` -> `alertmanagers` block).
+  - Alertmanager config added in `alertmanager/alertmanager.yml`.
+  - Docker compose includes `alertmanager` service on `:9093`.
+  - Drill runbook added: `runbooks/ALERT_DRILL.md`.
+  - Payment-specific alert rules added (`PaymentProviderRetrySpike`, `PaymentProviderDlqIncrease`, `PaymentProviderRequeueFailures`).
+  - Alertmanager routing/receivers extended for `payment-service` warning and critical paths.
+  - Payment drill runbook added: `runbooks/PAYMENT_OUTAGE_DRILL.md`.
+- Pending:
+  - Replace placeholder webhook receivers with production integrations (Slack/PagerDuty/email) and validate rollback callback telemetry.
 
 ## Shared Reliability (`ecom-back/common/common-core`)
 - Shared components added:
@@ -129,12 +154,30 @@ Last updated: 2026-02-14
   - Consumer dedup for Kafka events.
   - Outbox publisher for inventory reservation outcome events.
   - Scheduled reliability cleanup for outbox and consumed-event dedup records.
+  - Scheduled reservation-expiry sweep releases stale `RESERVED` records.
+  - Concurrency contract coverage for idempotent reserve and expiry release behavior.
   - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
-  - Compiles after saga + outbox/dedup extension.
+  - `inventory-service` tests pass including reservation expiry/idempotent reservation contracts and Testcontainers integration coverage for Kafka-driven contention + duplicate-event dedup.
+  - Flash-sale scenario can be executed via `ecom-back/load-tests/run-flash-sale.ps1`; thresholds fail the run if oversell invariant or latency/error SLOs are violated.
 - Pending:
-  - Reservation-expiry scheduler.
-  - Contract and concurrency tests.
+  - Tune flash-sale thresholds per environment and feed results into CI regression gate.
+
+## Load Testing (`ecom-back/load-tests`)
+- Suites:
+  - `k6/flash-sale-inventory.js`
+  - `k6/browse-products.js`
+  - `k6/cart-operations.js`
+  - `k6/checkout-flow.js`
+- Runner scripts:
+  - `run-flash-sale.ps1`
+  - `run-baseline-suites.ps1`
+- Budgets:
+  - Browse: p95 `<180ms`, fail rate `<2%`
+  - Cart: p95 `<220ms`, fail rate `<3%`, cart consistency `>99%`
+  - Checkout: p95 `<320ms`, fail rate `<5%`, checkout success `>95%`
+- Pending:
+  - Add CI pipeline stage to run selected suites and block regressions on threshold violations.
 
 ## Cart Service (`ecom-back/services/cart-service`)
 - APIs:
@@ -194,6 +237,10 @@ Last updated: 2026-02-14
   - `POST /api/payments/intents`
   - `GET /api/payments/{paymentId}`
   - `POST /api/payments/webhook`
+  - `GET /api/payments/provider/outage-mode`
+  - `POST /api/payments/provider/outage-mode?enabled=...`
+  - `GET /api/payments/provider/dead-letters`
+  - `POST /api/payments/provider/dead-letters/{id}/requeue`
 - Kafka in:
   - `order.created.v1`
 - Kafka out:
@@ -201,17 +248,22 @@ Last updated: 2026-02-14
   - `payment.failed.v1` (via outbox)
 - Data model:
   - `PaymentRecord`, `WebhookEventRecord`, consumed-event dedup table, outbox table (MySQL).
+  - `ProviderDeadLetterRecord` (MySQL) for provider outage retry exhaustion.
 - Patterns:
   - Webhook idempotency.
+  - HMAC-SHA256 webhook signature verification on raw payload (`X-Razorpay-Signature`).
+  - Provider adapter outage-mode toggle for deterministic drills.
+  - Retry policy for provider intent creation (`app.payment.provider.max-attempts`) with DLQ fallback.
+  - Dead-letter requeue workflow for provider recovery.
+  - Observability counters: `payment.provider.retry.total`, `payment.provider.dlq.total`, `payment.provider.requeue.total`, `payment.provider.outage.toggle.total`.
   - Consumer idempotency.
   - Outbox publisher.
   - Scheduled reliability cleanup for outbox and consumed-event dedup records.
   - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
-  - Compiles after outbox + dedup updates.
+  - `payment-service` tests pass, including controller failure-injection tests, signature verifier unit tests, and provider outage retry/DLQ/requeue unit coverage.
 - Pending:
-  - Provider signature hardening.
-  - DLQ/retry policies for provider failures.
+  - Threshold tuning from live drill telemetry and pager noise calibration.
 
 ## Review Service (`ecom-back/services/review-service`)
 - APIs:
@@ -236,6 +288,7 @@ Last updated: 2026-02-14
   - `GET /api/search/autocomplete`
   - `POST /api/search/reindex/products`
   - `GET /api/search/admin/relevance/evaluate`
+  - `GET /api/search/admin/relevance/dataset/health`
 - Kafka in:
   - `product.upserted.v1`
   - `product.deleted.v1`
@@ -255,10 +308,10 @@ Last updated: 2026-02-14
   - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - DIP via `SearchUseCases`.
 - Verification:
-  - Compiles after dataset expansion + target-threshold evaluation updates.
+  - `search-service` tests pass for relevance controller contract and dataset health service logic.
 - Pending:
-  - Reindex and contract/integration tests.
-  - Dataset refresh cadence and baseline quality gate in CI.
+  - Reindex integration coverage with seeded elastic documents.
+  - Dataset refresh cadence ownership + baseline quality gate in CI.
 
 ## Notification Service (`ecom-back/services/notification-service`)
 - APIs:
@@ -293,3 +346,8 @@ Last updated: 2026-02-14
 - Pending:
   - Production SMTP credential/secrets wiring.
   - Alertmanager receiver routing and on-call runbook drill validation.
+
+## API Docs Convention
+- `API_DOCS.md` added in each service folder and in `api-gateway`.
+- Rule: update corresponding `API_DOCS.md` whenever endpoint contracts, entities, stores, or async flow change.
+- Required sections validated by CI: `Endpoints`, `Entities`, `Data Stores`, `Flow`.

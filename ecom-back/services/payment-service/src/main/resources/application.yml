@@ -26,6 +26,10 @@ app:
     dedup-retention: P14D
   payment:
     webhook-secret: ${PAYMENT_WEBHOOK_SECRET:dev-webhook-secret}
+    provider:
+      max-attempts: 3
+      failure-rate: 0.0
+      outage-mode: false
   kafka:
     topics:
       order-created: order.created.v1

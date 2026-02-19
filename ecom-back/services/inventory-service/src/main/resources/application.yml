@@ -53,6 +53,8 @@ app:
     dedup-retention: P14D
   inventory:
     reservation-ttl-minutes: 30
+    reservation-expiry-scan-delay: PT60S
+    reservation-expiry-batch-size: 100
   kafka:
     topics:
       order-created: order.created.v1

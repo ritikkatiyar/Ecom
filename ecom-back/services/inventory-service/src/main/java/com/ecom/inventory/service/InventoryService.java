@@ -205,6 +205,26 @@ public class InventoryService implements InventoryUseCases {
         }
     }
 
+    @Override
+    @Transactional
+    public int releaseExpiredReservations(Instant cutoff, int batchSize) {
+        int safeBatchSize = Math.max(1, Math.min(batchSize, 500));
+        List<InventoryReservation> expired = reservationRepository
+                .findTop100ByStatusAndExpiresAtBeforeOrderByExpiresAtAsc("RESERVED", cutoff);
+
+        int releasedCount = 0;
+        for (int i = 0; i < Math.min(expired.size(), safeBatchSize); i++) {
+            InventoryReservation reservation = expired.get(i);
+            try {
+                safeRelease(reservation.getReservationId());
+                releasedCount++;
+            } catch (Exception ignored) {
+                // Keep sweep progressing even if a single reservation release fails.
+            }
+        }
+        return releasedCount;
+    }
+
     private List<InventoryReservation> findOrderReservations(String orderId) {
         if (orderId == null || orderId.isBlank()) {
             return List.of();

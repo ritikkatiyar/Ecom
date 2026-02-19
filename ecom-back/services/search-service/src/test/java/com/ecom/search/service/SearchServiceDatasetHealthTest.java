@@ -35,7 +35,7 @@ class SearchServiceDatasetHealthTest {
         SearchService service = new SearchService(
                 mock(SearchProductRepository.class),
                 mock(ElasticsearchOperations.class),
-                new ObjectMapper(),
+                new ObjectMapper().findAndRegisterModules(),
                 RestClient.builder(),
                 "http://localhost:8083",
                 new ByteArrayResource(datasetJson.getBytes()),
@@ -67,7 +67,7 @@ class SearchServiceDatasetHealthTest {
         SearchService service = new SearchService(
                 mock(SearchProductRepository.class),
                 mock(ElasticsearchOperations.class),
-                new ObjectMapper(),
+                new ObjectMapper().findAndRegisterModules(),
                 RestClient.builder(),
                 "http://localhost:8083",
                 new ByteArrayResource(datasetJson.getBytes()),

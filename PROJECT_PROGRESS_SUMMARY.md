@@ -1,6 +1,6 @@
 # Amazon Lite Progress Summary
 
-Generated on: 2026-02-14
+Generated on: 2026-02-19
 
 ## Overall Snapshot
 - Backend (Phase 2 target scope): `~99% complete`
@@ -40,6 +40,9 @@ Generated on: 2026-02-14
   - saga consumers for order/payment events (reserve/confirm/release compensation)
   - outbox-based publish + consumer dedup for saga event reliability
   - compensation on order timeout events (`order.timed-out.v1`)
+  - reservation expiry scheduler with concurrency contract tests
+  - real MySQL + Kafka integration tests for contention and duplicate-event dedup behavior
+  - outbox payload DDL hardened to MySQL-safe `TEXT` mapping (fresh-schema compatible)
 - `cart-service`
   - guest cart (Redis), logged-in cart (MySQL), merge flow
 - `order-service`
@@ -51,12 +54,18 @@ Generated on: 2026-02-14
   - payment intent, webhook handling, idempotency checks
   - consumes `order.created.v1`
   - emits `payment.authorized.v1` and `payment.failed.v1` through outbox
+  - webhook HMAC signature verification over raw payload
+  - failure-injection tests for missing/invalid signature and malformed payload rejection
+  - provider outage drill controls (`/provider/outage-mode`) with retry + DLQ for intent creation
+  - provider dead-letter requeue APIs and observability counters for retry/DLQ/requeue/toggle
 - `search-service`
   - fuzzy and boosted ranking search improvements
   - active-only filtering option
   - paged reindex from `product-service` via `POST /api/search/reindex/products`
   - product indexing consumer dedup
   - expanded curated relevance dataset evaluation with target pass-rate checks via `GET /api/search/admin/relevance/evaluate`
+  - dataset freshness/refresh health endpoint via `GET /api/search/admin/relevance/dataset/health`
+  - contract + unit tests for relevance evaluation and dataset refresh health
   - scheduled consumed-event dedup cleanup
 - `notification-service`
   - provider abstraction with `log` and `smtp` options
@@ -101,26 +110,42 @@ Generated on: 2026-02-14
   - Zipkin tracing bridge/reporter added for distributed tracing export
   - log correlation format includes `traceId` and `spanId` across service logs
   - management tracing config standardized (`management.tracing` + Zipkin endpoint)
+  - Prometheus alert routing wired to Alertmanager in infrastructure
+  - alert drill runbook added (`ecom-back/infrastructure/runbooks/ALERT_DRILL.md`)
 
 ### Developer Workflow
 - `run-side-by-side.ps1` available for local startup.
 - VS Code task-based integrated terminal startup is configured.
 - Detailed per-service tracker maintained in `SERVICE_DETAILED_PROGRESS.md`.
+- API-level docs are now maintained alongside each service via `API_DOCS.md`.
+- CI quality workflow added: `.github/workflows/backend-quality.yml` (service tests + dataset freshness + API docs validation).
+- Release pipeline workflow added: `.github/workflows/backend-release.yml` with staged promotion (`quality -> package -> staging -> production`) and environment gates.
+- Load test harness added: `ecom-back/load-tests/k6/flash-sale-inventory.js` with SLO thresholds (`p95`, success-rate, oversell=0) and `ecom-back/load-tests/run-flash-sale.ps1`.
+- Baseline k6 suites added for browse/cart/checkout:
+  - `ecom-back/load-tests/k6/browse-products.js`
+  - `ecom-back/load-tests/k6/cart-operations.js`
+  - `ecom-back/load-tests/k6/checkout-flow.js`
+  - unified runner: `ecom-back/load-tests/run-baseline-suites.ps1`
+- Post-deploy release safety added: smoke check gate + rollback trigger automation in `backend-release.yml`, with runbook `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
+- Payment outage observability hardening added:
+  - Prometheus rules for `payment_provider_retry_total`, `payment_provider_dlq_total`, and requeue failures
+  - Alertmanager payment owner routing (warning/critical)
+  - runbook: `ecom-back/infrastructure/runbooks/PAYMENT_OUTAGE_DRILL.md`
 
 ## Service-by-Service Completion
 
 | Service | Completion | Status |
 |---|---:|---|
-| API Gateway | 80% | In Progress |
+| API Gateway | 95% | In Progress |
 | Auth Service | 80% | In Progress |
 | User Service | 10% | Not Started (beyond scaffold) |
 | Product Service | 70% | In Progress |
-| Inventory Service | 89% | In Progress |
+| Inventory Service | 96% | In Progress |
 | Cart Service | 70% | In Progress |
 | Order Service | 92% | In Progress |
-| Payment Service | 75% | In Progress |
+| Payment Service | 90% | In Progress |
 | Review Service | 10% | Not Started (beyond scaffold) |
-| Search Service | 89% | In Progress |
+| Search Service | 93% | In Progress |
 | Notification Service | 91% | In Progress |
 
 ## Major Backend Gaps Remaining
@@ -130,13 +155,14 @@ Generated on: 2026-02-14
    - outbox pattern rollout (active in order/payment/inventory with shared common-core helpers)
    - retries, DLQ, consumer idempotency store
 3. Add stronger saga observability for compensations and runbookize replay/cleanup operations.
-4. Harden API Gateway further (fallback/circuit-breaker and edge-route contract tests).
+4. Harden API Gateway further (breaker-threshold tuning and policy regression coverage).
 5. Add resilience patterns consistently (retry/circuit breaker/timeouts).
-6. Complete observability instrumentation in code (metrics, traces, logs correlation).
-7. Search quality hardening (integration tests and dataset refresh cadence).
+6. Complete observability instrumentation in code (business KPI dashboards and receiver integrations).
+7. Search quality hardening (refresh ownership automation and cadence governance).
 
 ## Suggested Next Backend Milestone
-1. Add search integration/contract tests and dataset refresh workflow.
-2. Wire Alertmanager receiver routing and runbook drill scripts.
-3. Add inventory reservation expiry scheduler and concurrency contract tests.
-4. Add gateway edge-route contract tests (auth/public/circuit-breaker paths).
+1. Replace Alertmanager placeholder webhooks with production receiver routes.
+2. Add deploy pipeline stages with environment promotion checks.
+3. Add rollback verification callbacks and release dashboard visibility.
+4. Add CI-triggered load regression stage with perf budget enforcement.
+5. Execute search dataset ownership rota automation (cadence + reviewer assignment).

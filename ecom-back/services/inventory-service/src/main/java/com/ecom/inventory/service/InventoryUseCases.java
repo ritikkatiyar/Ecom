@@ -1,5 +1,6 @@
 package com.ecom.inventory.service;
 
+import java.time.Instant;
 import java.util.List;
 
 import com.ecom.inventory.dto.ReservationActionRequest;
@@ -24,4 +25,6 @@ public interface InventoryUseCases {
     void releaseForOrder(String orderId);
 
     void confirmForOrder(String orderId);
+
+    int releaseExpiredReservations(Instant cutoff, int batchSize);
 }

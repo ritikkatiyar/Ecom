@@ -21,7 +21,7 @@ public class FallbackController {
 
     @GetMapping("/{service}")
     public ResponseEntity<Map<String, Object>> serviceFallback(
-            @PathVariable String service,
+            @PathVariable("service") String service,
             ServerWebExchange exchange) {
         Throwable cause = exchange.getAttribute(ServerWebExchangeUtils.CIRCUITBREAKER_EXECUTION_EXCEPTION_ATTR);
 
