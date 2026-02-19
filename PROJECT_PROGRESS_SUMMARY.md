@@ -45,6 +45,7 @@ Generated on: 2026-02-19
   - outbox payload DDL hardened to MySQL-safe `TEXT` mapping (fresh-schema compatible)
 - `cart-service`
   - guest cart (Redis), logged-in cart (MySQL), merge flow
+  - SOLID/SRP split with `CartUseCases` + dedicated owner/store components (`CartOwnerResolver`, `UserCartStore`, `GuestCartStore`)
 - `order-service`
   - create/get/list/cancel/confirm lifecycle baseline
   - emits `order.created.v1` through outbox
@@ -104,6 +105,7 @@ Generated on: 2026-02-19
 - DIP refactor applied:
   - controllers/consumers depend on `UseCases` interfaces
   - concrete services implement interfaces
+  - cart-service now follows DIP/SRP at controller-service-store boundaries
 - Gateway hardening baseline applied:
   - JWT validation via auth-service
   - correlation ID propagation
@@ -198,7 +200,7 @@ Generated on: 2026-02-19
 | User Service | 58% | In Progress |
 | Product Service | 70% | In Progress |
 | Inventory Service | 96% | In Progress |
-| Cart Service | 70% | In Progress |
+| Cart Service | 78% | In Progress |
 | Order Service | 92% | In Progress |
 | Payment Service | 90% | In Progress |
 | Review Service | 56% | In Progress |
@@ -223,3 +225,5 @@ Generated on: 2026-02-19
 3. Keep calibration delta changes tied to artifact evidence and weekly signoff.
 4. Complete user/review services and lock backend phase-exit criteria.
 5. Increase SOLID maturity with SRP/port-adapter refactors in complex services.
+
+

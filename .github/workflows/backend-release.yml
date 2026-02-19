@@ -131,6 +131,7 @@ jobs:
       - name: Trigger staging rollback on smoke failure
         id: rollback_staging
         if: steps.smoke_staging.outcome == 'failure'
+        continue-on-error: true
         env:
           ROLLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_WEBHOOK }}
           ROLLBACK_ENVIRONMENT: staging
@@ -139,14 +140,17 @@ jobs:
           ROLLBACK_RUN_ID: ${{ github.run_id }}
         run: |
           if [ -z "$ROLLBACK_WEBHOOK_URL" ]; then
-            echo "STAGING_ROLLBACK_WEBHOOK not configured; cannot auto-rollback."
-            exit 1
+            echo "STAGING_ROLLBACK_WEBHOOK not configured; rollback trigger skipped."
+            echo "rollback_state=skipped_missing_webhook" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           python ecom-back/scripts/trigger_rollback.py
+          echo "rollback_state=triggered" >> "$GITHUB_OUTPUT"
 
       - name: Verify staging rollback callback
         id: rollback_callback_staging
         if: steps.smoke_staging.outcome == 'failure'
+        continue-on-error: true
         env:
           CALLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_VERIFY_WEBHOOK }}
           CALLBACK_METRICS_URL: ${{ secrets.STAGING_RELEASE_GATE_METRICS_URL }}
@@ -158,10 +162,12 @@ jobs:
           CALLBACK_DETAILS: smoke_failure_rollback_triggered
         run: |
           if [ -z "$CALLBACK_WEBHOOK_URL" ]; then
-            echo "STAGING_ROLLBACK_VERIFY_WEBHOOK not configured; cannot verify rollback callback."
-            exit 1
+            echo "STAGING_ROLLBACK_VERIFY_WEBHOOK not configured; rollback callback verification skipped."
+            echo "callback_state=skipped_missing_webhook" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           python ecom-back/scripts/post_release_gate_callback.py
+          echo "callback_state=verified" >> "$GITHUB_OUTPUT"
 
       - name: Staging release gate summary
         if: always()
@@ -173,7 +179,9 @@ jobs:
             echo "|---|---|"
             echo "| Smoke checks | ${{ steps.smoke_staging.outcome }} |"
             echo "| Rollback trigger | ${{ steps.rollback_staging.outcome || 'skipped' }} |"
+            echo "| Rollback state | ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }} |"
             echo "| Rollback callback verification | ${{ steps.rollback_callback_staging.outcome || 'skipped' }} |"
+            echo "| Rollback callback state | ${{ steps.rollback_callback_staging.outputs.callback_state || 'not-required' }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
           mkdir -p release-gate
@@ -182,7 +190,9 @@ jobs:
             "environment": "staging",
             "smokeOutcome": "${{ steps.smoke_staging.outcome }}",
             "rollbackTriggerOutcome": "${{ steps.rollback_staging.outcome || 'skipped' }}",
+            "rollbackState": "${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}",
             "rollbackCallbackOutcome": "${{ steps.rollback_callback_staging.outcome || 'skipped' }}",
+            "rollbackCallbackState": "${{ steps.rollback_callback_staging.outputs.callback_state || 'not-required' }}",
             "runId": "${{ github.run_id }}",
             "ref": "${{ github.ref }}"
           }
@@ -198,7 +208,7 @@ jobs:
       - name: Enforce staging smoke gate
         if: steps.smoke_staging.outcome == 'failure'
         run: |
-          echo "Staging smoke checks failed and rollback was triggered."
+          echo "Staging smoke checks failed. Rollback state: ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}."
           exit 1
 
   deploy-production:

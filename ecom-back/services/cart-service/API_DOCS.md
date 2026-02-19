@@ -19,6 +19,8 @@ Base path: `/api/cart`
 - Kafka: not yet engaged for cart events.
 
 ## Flow
-1. Guest operations read/write Redis cart keys.
-2. Authenticated operations persist/read MySQL cart rows.
-3. Merge API reads guest cart from Redis, upserts user cart rows in MySQL, then clears guest cart.
+1. `CartController` delegates to `CartUseCases` (`CartService`) for orchestration.
+2. `CartOwnerResolver` validates ownership (`userId` xor `guestId`) and resolves request scope.
+3. `UserCartStore` handles authenticated cart operations with `CartItemRepository` on MySQL.
+4. `GuestCartStore` handles guest cart operations in Redis with 7-day TTL refresh on writes.
+5. Merge flow pulls guest Redis entries, upserts MySQL rows, then clears guest key.

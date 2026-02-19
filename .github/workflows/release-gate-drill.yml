@@ -33,6 +33,9 @@ jobs:
       - name: Evaluate drill deltas
         run: python ecom-back/scripts/evaluate_release_gate_drills.py --out-dir build-artifacts
 
+      - name: Record drill log row
+        run: python ecom-back/scripts/record_release_gate_drill_log.py --owner platform-oncall
+
       - name: Drill summary
         if: always()
         run: |
@@ -40,6 +43,8 @@ jobs:
             echo "## Release Gate Drill"
             echo ""
             cat build-artifacts/release-gate-drill-delta-report.md
+            echo ""
+            cat build-artifacts/release-gate-drill-log.md
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload drill artifacts
@@ -53,3 +58,4 @@ jobs:
             build-artifacts/release-gate-drill-report.json
             build-artifacts/release-gate-drill-delta-report.json
             build-artifacts/release-gate-drill-delta-report.md
+            build-artifacts/release-gate-drill-log.md

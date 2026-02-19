@@ -41,6 +41,8 @@ Last updated: 2026-02-19
 - 2026-02-19: Added scheduled staged/prod release-gate drill workflow (`release-gate-drill.yml`) with `run_release_gate_drill.py` and auto-generated delta reports for runbook tuning capture.
 - 2026-02-19: Implemented user-service profile/address/preferences APIs with MySQL entities/repositories, DIP-aligned `UserUseCases`, and OpenAPI/observability baseline wiring.
 - 2026-02-19: Implemented review-service review/rating CRUD and moderation APIs with MySQL entity/repository model, `ReviewUseCases` DIP boundary, and OpenAPI/observability baseline wiring.
+- 2026-02-19: Added automated release-gate drill log recorder (`record_release_gate_drill_log.py`) and wired `release-gate-drill.yml` to publish persistent delta-log rows (`release-gate-drill-log.md`).
+- 2026-02-19: Refactored cart-service for SOLID/SRP by splitting ownership resolution and guest/user storage responsibilities (`CartOwnerResolver`, `GuestCartStore`, `UserCartStore`) and switching controller dependency to `CartUseCases`.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -233,6 +235,8 @@ Last updated: 2026-02-19
   - Guest cart in Redis.
   - User cart items in MySQL.
 - Patterns:
+  - DIP via `CartUseCases` (`CartController` -> interface boundary).
+  - SRP split: `CartService` orchestration, `CartOwnerResolver` owner validation, `UserCartStore` MySQL operations, `GuestCartStore` Redis operations/TTL.
   - Guest-to-user merge.
   - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.
 - Verification:
@@ -401,3 +405,6 @@ Last updated: 2026-02-19
 - `API_DOCS.md` added in each service folder and in `api-gateway`.
 - Rule: update corresponding `API_DOCS.md` whenever endpoint contracts, entities, stores, or async flow change.
 - Required sections validated by CI: `Endpoints`, `Entities`, `Data Stores`, `Flow`.
+
+
+

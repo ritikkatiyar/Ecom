@@ -61,5 +61,6 @@ Status: `In Progress`
 
 ## Immediate Next 3 Execution Items
 1. Execute and review scheduled release-gate drill artifacts, then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
-2. Raise SOLID maturity by SRP-oriented refactors in high-complexity services.
+2. Continue SOLID maturity loop: cart-service SRP split completed; order/payment SRP refactors pending.
 3. Frontend phase kickoff with API integration for product/search/cart flows.
+

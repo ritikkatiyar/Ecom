@@ -15,8 +15,8 @@ Automate post-deploy validation and rollback trigger in GitHub Actions release p
 - `STAGING_DEPLOY_WEBHOOK`
 - `STAGING_SMOKE_URLS` (comma-separated health URLs)
 - `STAGING_SMOKE_BEARER_TOKEN` (optional)
-- `STAGING_ROLLBACK_WEBHOOK`
-- `STAGING_ROLLBACK_VERIFY_WEBHOOK`
+- `STAGING_ROLLBACK_WEBHOOK` (recommended; if missing, workflow records `rollbackState=skipped_missing_webhook`)
+- `STAGING_ROLLBACK_VERIFY_WEBHOOK` (recommended; if missing, workflow records `rollbackCallbackState=skipped_missing_webhook`)
 - `STAGING_RELEASE_GATE_METRICS_URL` (optional but recommended; points to gateway `/internal/release-gate/callbacks`)
 
 ### Production
@@ -63,6 +63,7 @@ python ecom-back/scripts/evaluate_release_gate_drills.py `
 Outputs:
 - `build-artifacts/release-gate-drill-delta-report.json`
 - `build-artifacts/release-gate-drill-delta-report.md`
+- `build-artifacts/release-gate-drill-log.md` (history rows for runbook table fields)
 
 ### Scheduled Drill Workflow
 - Workflow: `.github/workflows/release-gate-drill.yml`
@@ -74,6 +75,14 @@ Outputs:
 | Date (UTC) | Staging Status | Production Status | Delta Applied | Owner | Notes |
 |---|---|---|---|---|---|
 | YYYY-MM-DD | drill_passed / attention_required / missing | drill_passed / attention_required / missing | yes/no + setting | oncall-handle | artifact link + rationale |
+
+Automated log command:
+```powershell
+python ecom-back/scripts/record_release_gate_drill_log.py `
+  --delta-report build-artifacts/release-gate-drill-delta-report.json `
+  --owner platform-oncall `
+  --out build-artifacts/release-gate-drill-log.md
+```
 
 ### Readiness Checklist Gate
 - Workflow: `.github/workflows/release-readiness-checklist.yml`

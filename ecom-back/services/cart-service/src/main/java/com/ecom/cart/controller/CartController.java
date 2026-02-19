@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ecom.cart.dto.CartItemRequest;
 import com.ecom.cart.dto.CartResponse;
 import com.ecom.cart.dto.MergeCartRequest;
-import com.ecom.cart.service.CartService;
+import com.ecom.cart.service.CartUseCases;
 
 import jakarta.validation.Valid;
 
@@ -26,22 +26,22 @@ import jakarta.validation.Valid;
 @Validated
 public class CartController {
 
-    private final CartService cartService;
+    private final CartUseCases cartUseCases;
 
-    public CartController(CartService cartService) {
-        this.cartService = cartService;
+    public CartController(CartUseCases cartUseCases) {
+        this.cartUseCases = cartUseCases;
     }
 
     @PostMapping("/items")
     public ResponseEntity<CartResponse> addItem(@Valid @RequestBody CartItemRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(cartService.addItem(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(cartUseCases.addItem(request));
     }
 
     @GetMapping
     public CartResponse getCart(
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String guestId) {
-        return cartService.getCart(userId, guestId);
+        return cartUseCases.getCart(userId, guestId);
     }
 
     @DeleteMapping("/items/{productId}")
@@ -49,7 +49,7 @@ public class CartController {
             @PathVariable String productId,
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String guestId) {
-        return cartService.removeItem(userId, guestId, productId);
+        return cartUseCases.removeItem(userId, guestId, productId);
     }
 
     @DeleteMapping
@@ -57,12 +57,12 @@ public class CartController {
     public void clearCart(
             @RequestParam(required = false) Long userId,
             @RequestParam(required = false) String guestId) {
-        cartService.clearCart(userId, guestId);
+        cartUseCases.clearCart(userId, guestId);
     }
 
     @PostMapping("/merge")
     public CartResponse merge(@Valid @RequestBody MergeCartRequest request) {
-        return cartService.merge(request);
+        return cartUseCases.merge(request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
