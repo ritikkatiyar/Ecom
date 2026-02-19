@@ -16,7 +16,7 @@ Status: `In Progress (~99% core, remaining hardening)`
 - [x] Release pipeline with smoke/rollback gates and rollback callback visibility.
 - [x] Load suites and regression jobs (staging + production read-heavy profile).
 - [x] User service domain APIs (profile/address/preferences) implemented.
-- [ ] Review service domain APIs (CRUD/moderation) pending.
+- [x] Review service domain APIs (CRUD/moderation) implemented.
 - [ ] Final production hardening loop (threshold tuning, receiver validation, remaining contract depth) pending.
 
 ## Phase 3 - Event-Driven Architecture
@@ -60,6 +60,6 @@ Status: `In Progress`
 - [ ] 10k-user sustained scenario validation + production-profile budget signoff pending.
 
 ## Immediate Next 3 Execution Items
-1. Complete `review-service` business APIs.
-2. Execute and review scheduled release-gate drill artifacts, then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
-3. Raise SOLID maturity by SRP-oriented refactors in high-complexity services.
+1. Execute and review scheduled release-gate drill artifacts, then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
+2. Raise SOLID maturity by SRP-oriented refactors in high-complexity services.
+3. Frontend phase kickoff with API integration for product/search/cart flows.

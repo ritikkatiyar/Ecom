@@ -40,6 +40,7 @@ Last updated: 2026-02-19
 - 2026-02-19: Added release readiness checklist gate (`release-readiness-checklist.yml`) and `check_release_readiness.py` to enforce drill/calibration artifact evidence before readiness signoff.
 - 2026-02-19: Added scheduled staged/prod release-gate drill workflow (`release-gate-drill.yml`) with `run_release_gate_drill.py` and auto-generated delta reports for runbook tuning capture.
 - 2026-02-19: Implemented user-service profile/address/preferences APIs with MySQL entities/repositories, DIP-aligned `UserUseCases`, and OpenAPI/observability baseline wiring.
+- 2026-02-19: Implemented review-service review/rating CRUD and moderation APIs with MySQL entity/repository model, `ReviewUseCases` DIP boundary, and OpenAPI/observability baseline wiring.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -307,17 +308,26 @@ Last updated: 2026-02-19
 
 ## Review Service (`ecom-back/services/review-service`)
 - APIs:
-  - Health only.
+  - `POST /api/reviews`
+  - `PUT /api/reviews/{reviewId}`
+  - `DELETE /api/reviews/{reviewId}`
+  - `GET /api/reviews/{reviewId}`
+  - `GET /api/reviews?productId=...&includePending=...`
+  - `GET /api/reviews/by-user?userId=...`
+  - `POST /api/reviews/{reviewId}/moderate`
 - Kafka in/out:
-  - None.
+  - None yet.
 - Data model:
-  - Not implemented.
+  - `ReviewRecord` (MySQL), `ReviewStatus` enum (`PENDING`, `APPROVED`, `REJECTED`).
 - Patterns:
-  - Scaffold only.
+  - DIP via `ReviewUseCases`.
+  - Moderation flow: create/update resets review to `PENDING`.
+  - Product listing defaults to approved reviews only (`includePending=false`).
+  - OpenAPI + Prometheus + Zipkin baseline in service config.
 - Verification:
-  - Module scaffold exists.
+  - `review-service` compiles and tests pass (`mvn -f ecom-back/services/review-service/pom.xml test`).
 - Pending:
-  - CRUD and moderation implementation.
+  - Add integration tests + gateway auth policy for write/moderation paths.
 
 ## Search Service (`ecom-back/services/search-service`)
 - APIs:

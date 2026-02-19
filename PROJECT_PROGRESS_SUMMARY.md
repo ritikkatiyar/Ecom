@@ -75,6 +75,15 @@ Generated on: 2026-02-19
   - template-based subject/body rendering + `notification.alert.v1` alerts + metrics counters
   - tuned Prometheus alert thresholds and Grafana dashboard thresholds (dead-letter and failure-rate signals)
   - scheduled consumed-event dedup cleanup
+- `user-service`
+  - profile, address, and preferences APIs on MySQL
+  - default-address normalization (`set default` clears prior defaults for the user)
+  - DIP boundary via `UserUseCases` interface
+- `review-service`
+  - review/rating CRUD + moderation workflow on MySQL
+  - moderation status model (`PENDING`, `APPROVED`, `REJECTED`)
+  - product listing path returns `APPROVED` by default with optional pending visibility
+  - DIP boundary via `ReviewUseCases` interface
 
 ### Reliability Cleanup Automation
 - Added scheduled retention cleanup jobs for:
@@ -192,12 +201,12 @@ Generated on: 2026-02-19
 | Cart Service | 70% | In Progress |
 | Order Service | 92% | In Progress |
 | Payment Service | 90% | In Progress |
-| Review Service | 10% | Not Started (beyond scaffold) |
+| Review Service | 56% | In Progress |
 | Search Service | 93% | In Progress |
 | Notification Service | 91% | In Progress |
 
 ## Major Backend Gaps Remaining
-1. Complete remaining business hardening for `user-service` and implement domain logic for `review-service` (search/notification already have active domain flows and need further hardening).
+1. Complete remaining business hardening for `user-service` and `review-service` (integration tests, auth-policy coupling, and eventing decisions).
 2. Add stronger event architecture:
    - schema/versioning discipline
    - outbox pattern rollout (active in order/payment/inventory with shared common-core helpers)
@@ -214,7 +223,3 @@ Generated on: 2026-02-19
 3. Keep calibration delta changes tied to artifact evidence and weekly signoff.
 4. Complete user/review services and lock backend phase-exit criteria.
 5. Increase SOLID maturity with SRP/port-adapter refactors in complex services.
-- `user-service`
-  - profile, address, and preferences APIs on MySQL
-  - default-address normalization (`set default` clears prior defaults for the user)
-  - DIP boundary via `UserUseCases` interface

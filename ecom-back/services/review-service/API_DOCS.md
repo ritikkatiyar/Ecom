@@ -3,15 +3,25 @@
 Base path: `/api/reviews`
 
 ## Endpoints
-- Health endpoint only at the moment.
+- `POST /` - create review (`userId` query param required).
+- `PUT /{reviewId}` - update own review (`userId` query param required).
+- `DELETE /{reviewId}` - delete own review (`userId` query param required).
+- `GET /{reviewId}` - fetch review by id.
+- `GET /?productId=...&includePending=false` - list product reviews.
+- `GET /by-user?userId=...` - list user reviews.
+- `POST /{reviewId}/moderate` - moderation status update (`APPROVED|REJECTED|PENDING`).
 
 ## Entities
-- Not implemented yet.
+- `ReviewRecord` (MySQL)
+- `ReviewStatus` enum: `PENDING`, `APPROVED`, `REJECTED`
 
 ## Data Stores
-- Planned: MySQL for reviews/ratings/moderation.
-- Redis/Kafka: not engaged yet.
+- MySQL: review/rating/moderation persistence.
+- Redis: not engaged.
+- Kafka: not engaged.
 
 ## Flow
-1. Service currently exposes health only.
-2. CRUD/moderation workflow to be introduced in upcoming implementation point.
+1. Controller depends on `ReviewUseCases` interface (DIP boundary).
+2. Create/update requests set review status to `PENDING` for moderation.
+3. Public product listing returns `APPROVED` reviews unless `includePending=true`.
+4. Moderation endpoint updates review status and supports review workflow state transitions.
