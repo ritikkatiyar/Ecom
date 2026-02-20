@@ -60,6 +60,7 @@ Generated on: 2026-02-19
   - failure-injection tests for missing/invalid signature and malformed payload rejection
   - provider outage drill controls (`/provider/outage-mode`) with retry + DLQ for intent creation
   - provider dead-letter requeue APIs and observability counters for retry/DLQ/requeue/toggle
+  - SRP split with dedicated provider allocator, result publisher, and response mapper components
 - `search-service`
   - fuzzy and boosted ranking search improvements
   - active-only filtering option
@@ -203,7 +204,7 @@ Generated on: 2026-02-19
 | Inventory Service | 96% | In Progress |
 | Cart Service | 78% | In Progress |
 | Order Service | 94% | In Progress |
-| Payment Service | 90% | In Progress |
+| Payment Service | 93% | In Progress |
 | Review Service | 56% | In Progress |
 | Search Service | 93% | In Progress |
 | Notification Service | 91% | In Progress |

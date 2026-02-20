@@ -50,16 +50,22 @@ class PaymentServiceTest {
 
     @BeforeEach
     void setUp() {
+        var meterRegistry = new SimpleMeterRegistry();
+        ProviderPaymentIdAllocator providerPaymentIdAllocator =
+                new ProviderPaymentIdAllocator(deadLetterRepository, providerGateway, meterRegistry, 3);
+        PaymentResultPublisher paymentResultPublisher =
+                new PaymentResultPublisher(outboxService, "payment.authorized.v1", "payment.failed.v1");
+        PaymentResponseMapper paymentResponseMapper = new PaymentResponseMapper();
+
         paymentService = new PaymentService(
                 paymentRepository,
                 webhookEventRepository,
                 deadLetterRepository,
-                outboxService,
                 providerGateway,
-                new SimpleMeterRegistry(),
-                "payment.authorized.v1",
-                "payment.failed.v1",
-                3);
+                providerPaymentIdAllocator,
+                paymentResultPublisher,
+                paymentResponseMapper,
+                meterRegistry);
     }
 
     @Test

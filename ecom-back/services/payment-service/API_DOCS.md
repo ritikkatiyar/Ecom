@@ -24,12 +24,12 @@ Base path: `/api/payments`
 - Redis: not used in payment service currently.
 
 ## Flow
-1. Intent API creates/updates `PaymentRecord`.
-2. Provider adapter is called with retry policy (`app.payment.provider.max-attempts`).
-3. Provider outage/transient failures after max retries move request to `ProviderDeadLetterRecord` and increment DLQ metrics.
-4. Requeue endpoint retries a DLQ record and recreates `PaymentRecord` when provider recovers.
-5. Webhook API validates `X-Razorpay-Signature` using HMAC-SHA256 over raw payload; invalid/missing signature is rejected.
-6. Webhook payload is validated and deduplicated using `WebhookEventRecord`.
-7. Payment state changes create outbox events in `OutboxEventRecord`.
-8. Outbox publisher emits `payment.authorized`/`payment.failed` to Kafka.
-9. `ConsumedEventRecord` dedup table prevents duplicate processing for Kafka consumers.
+1. `PaymentController` delegates to `PaymentUseCases` (`PaymentService`) for orchestration.
+2. Intent API creates/updates `PaymentRecord`.
+3. `ProviderPaymentIdAllocator` calls provider adapter with retry policy (`app.payment.provider.max-attempts`) and records retries.
+4. Provider outage/transient failures after max retries move request to `ProviderDeadLetterRecord` and increment DLQ metrics.
+5. Requeue endpoint retries a DLQ record and recreates `PaymentRecord` when provider recovers.
+6. Webhook API validates `X-Razorpay-Signature` using HMAC-SHA256 over raw payload; invalid/missing signature is rejected.
+7. Webhook payload is validated and deduplicated using `WebhookEventRecord`.
+8. `PaymentResultPublisher` enqueues outbox events in `OutboxEventRecord` for `payment.authorized`/`payment.failed`.
+9. Outbox publisher emits events to Kafka and `ConsumedEventRecord` dedup table prevents duplicate consumer processing.

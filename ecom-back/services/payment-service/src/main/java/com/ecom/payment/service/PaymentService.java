@@ -6,7 +6,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,32 +29,29 @@ public class PaymentService implements PaymentUseCases {
     private final PaymentRepository paymentRepository;
     private final WebhookEventRepository webhookEventRepository;
     private final ProviderDeadLetterRepository deadLetterRepository;
-    private final OutboxService outboxService;
     private final PaymentProviderGateway providerGateway;
+    private final ProviderPaymentIdAllocator providerPaymentIdAllocator;
+    private final PaymentResultPublisher paymentResultPublisher;
+    private final PaymentResponseMapper paymentResponseMapper;
     private final MeterRegistry meterRegistry;
-    private final String paymentAuthorizedTopic;
-    private final String paymentFailedTopic;
-    private final int providerMaxAttempts;
 
     public PaymentService(
             PaymentRepository paymentRepository,
             WebhookEventRepository webhookEventRepository,
             ProviderDeadLetterRepository deadLetterRepository,
-            OutboxService outboxService,
             PaymentProviderGateway providerGateway,
-            MeterRegistry meterRegistry,
-            @Value("${app.kafka.topics.payment-authorized:payment.authorized.v1}") String paymentAuthorizedTopic,
-            @Value("${app.kafka.topics.payment-failed:payment.failed.v1}") String paymentFailedTopic,
-            @Value("${app.payment.provider.max-attempts:3}") int providerMaxAttempts) {
+            ProviderPaymentIdAllocator providerPaymentIdAllocator,
+            PaymentResultPublisher paymentResultPublisher,
+            PaymentResponseMapper paymentResponseMapper,
+            MeterRegistry meterRegistry) {
         this.paymentRepository = paymentRepository;
         this.webhookEventRepository = webhookEventRepository;
         this.deadLetterRepository = deadLetterRepository;
-        this.outboxService = outboxService;
         this.providerGateway = providerGateway;
+        this.providerPaymentIdAllocator = providerPaymentIdAllocator;
+        this.paymentResultPublisher = paymentResultPublisher;
+        this.paymentResponseMapper = paymentResponseMapper;
         this.meterRegistry = meterRegistry;
-        this.paymentAuthorizedTopic = paymentAuthorizedTopic;
-        this.paymentFailedTopic = paymentFailedTopic;
-        this.providerMaxAttempts = Math.max(1, providerMaxAttempts);
     }
 
     @Transactional
@@ -76,7 +72,7 @@ public class PaymentService implements PaymentUseCases {
         record.setCurrency(request.currency().toUpperCase());
         record.setStatus(PaymentStatus.PENDING);
         record.setIdempotencyKey(request.idempotencyKey());
-        record.setProviderPaymentId(createProviderPaymentIdWithRetry(request));
+        record.setProviderPaymentId(providerPaymentIdAllocator.allocate(request));
 
         return toResponse(paymentRepository.save(record));
     }
@@ -105,7 +101,7 @@ public class PaymentService implements PaymentUseCases {
             record.setFailureReason(null);
             record.setProviderEventId(request.providerEventId());
             paymentRepository.save(record);
-            publishResult(record, "AUTHORIZED", null);
+            paymentResultPublisher.publish(record, "AUTHORIZED", null);
             return "processed";
         }
 
@@ -114,7 +110,7 @@ public class PaymentService implements PaymentUseCases {
             record.setFailureReason(request.failureReason());
             record.setProviderEventId(request.providerEventId());
             paymentRepository.save(record);
-            publishResult(record, "FAILED", request.failureReason());
+            paymentResultPublisher.publish(record, "FAILED", request.failureReason());
             return "processed";
         }
 
@@ -188,7 +184,7 @@ public class PaymentService implements PaymentUseCases {
             return toResponse(saved);
         } catch (Exception ex) {
             deadLetter.setAttempts(deadLetter.getAttempts() + 1);
-            deadLetter.setFailureReason(limitFailureReason(ex.getMessage()));
+            deadLetter.setFailureReason(providerPaymentIdAllocator.sanitizeFailureReason(ex.getMessage()));
             deadLetterRepository.save(deadLetter);
             meterRegistry.counter("payment.provider.requeue.total", "result", "failed").increment();
             throw new IllegalStateException("Provider requeue failed");
@@ -207,87 +203,11 @@ public class PaymentService implements PaymentUseCases {
         return providerGateway.isOutageMode();
     }
 
-    private String createProviderPaymentIdWithRetry(CreatePaymentIntentRequest request) {
-        Exception lastError = null;
-        for (int attempt = 1; attempt <= providerMaxAttempts; attempt++) {
-            try {
-                return providerGateway.createPaymentId(
-                        request.orderId(),
-                        request.amount().setScale(2, RoundingMode.HALF_UP),
-                        request.currency().toUpperCase());
-            } catch (Exception ex) {
-                lastError = ex;
-                meterRegistry.counter("payment.provider.retry.total").increment();
-            }
-        }
-        moveToProviderDeadLetter(request, lastError);
-        meterRegistry.counter("payment.provider.dlq.total").increment();
-        throw new IllegalStateException("Payment provider unavailable; request moved to DLQ");
-    }
-
-    private void moveToProviderDeadLetter(CreatePaymentIntentRequest request, Exception lastError) {
-        ProviderDeadLetterRecord deadLetter = new ProviderDeadLetterRecord();
-        deadLetter.setIdempotencyKey(request.idempotencyKey());
-        deadLetter.setOrderId(request.orderId());
-        deadLetter.setUserId(request.userId());
-        deadLetter.setAmount(request.amount().setScale(2, RoundingMode.HALF_UP));
-        deadLetter.setCurrency(request.currency().toUpperCase());
-        deadLetter.setAttempts(providerMaxAttempts);
-        deadLetter.setStatus("PENDING");
-        deadLetter.setFailureReason(limitFailureReason(lastError == null ? "Unknown provider failure" : lastError.getMessage()));
-        deadLetterRepository.save(deadLetter);
-    }
-
-    private String limitFailureReason(String reason) {
-        if (reason == null) {
-            return null;
-        }
-        return reason.length() > 250 ? reason.substring(0, 250) : reason;
-    }
-
-    private void publishResult(PaymentRecord record, String status, String reason) {
-        PaymentResultPayload payload = new PaymentResultPayload(
-                record.getOrderId(),
-                record.getId(),
-                record.getProviderPaymentId(),
-                status,
-                reason,
-                Instant.now());
-
-        String eventType = "AUTHORIZED".equals(status) ? "payment.authorized.v1" : "payment.failed.v1";
-        String topic = "AUTHORIZED".equals(status) ? paymentAuthorizedTopic : paymentFailedTopic;
-        outboxService.enqueue(topic, record.getOrderId(), eventType, payload, "payment-service");
-    }
-
     private PaymentResponse toResponse(PaymentRecord p) {
-        return new PaymentResponse(
-                p.getId(),
-                p.getOrderId(),
-                p.getUserId(),
-                p.getAmount(),
-                p.getCurrency(),
-                p.getStatus().name(),
-                p.getProviderPaymentId(),
-                p.getIdempotencyKey(),
-                p.getFailureReason(),
-                p.getCreatedAt(),
-                p.getUpdatedAt());
+        return paymentResponseMapper.toResponse(p);
     }
 
     private ProviderDeadLetterResponse toResponse(ProviderDeadLetterRecord deadLetter) {
-        return new ProviderDeadLetterResponse(
-                deadLetter.getId(),
-                deadLetter.getIdempotencyKey(),
-                deadLetter.getOrderId(),
-                deadLetter.getUserId(),
-                deadLetter.getAmount(),
-                deadLetter.getCurrency(),
-                deadLetter.getAttempts(),
-                deadLetter.getStatus(),
-                deadLetter.getFailureReason(),
-                deadLetter.getRequeuedPaymentId(),
-                deadLetter.getCreatedAt(),
-                deadLetter.getUpdatedAt(),
-                deadLetter.getResolvedAt());
+        return paymentResponseMapper.toResponse(deadLetter);
     }
 }

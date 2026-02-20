@@ -44,6 +44,7 @@ Last updated: 2026-02-19
 - 2026-02-19: Added automated release-gate drill log recorder (`record_release_gate_drill_log.py`) and wired `release-gate-drill.yml` to publish persistent delta-log rows (`release-gate-drill-log.md`).
 - 2026-02-19: Refactored cart-service for SOLID/SRP by splitting ownership resolution and guest/user storage responsibilities (`CartOwnerResolver`, `GuestCartStore`, `UserCartStore`) and switching controller dependency to `CartUseCases`.
 - 2026-02-19: Refactored order-service for SOLID/SRP by extracting item serialization (`OrderItemCodec`), response mapping (`OrderResponseMapper`), and outbox event publishing (`OrderEventPublisher`) from `OrderService`.
+- 2026-02-20: Refactored payment-service for SOLID/SRP by extracting provider retry+DLQ allocation (`ProviderPaymentIdAllocator`), outbox event publication (`PaymentResultPublisher`), and DTO mapping (`PaymentResponseMapper`) from `PaymentService`.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -300,8 +301,9 @@ Last updated: 2026-02-19
   - Webhook idempotency.
   - HMAC-SHA256 webhook signature verification on raw payload (`X-Razorpay-Signature`).
   - Provider adapter outage-mode toggle for deterministic drills.
-  - Retry policy for provider intent creation (`app.payment.provider.max-attempts`) with DLQ fallback.
+  - Retry policy for provider intent creation (`app.payment.provider.max-attempts`) with DLQ fallback via `ProviderPaymentIdAllocator`.
   - Dead-letter requeue workflow for provider recovery.
+  - SRP split: `PaymentService` orchestration, `PaymentResultPublisher` Kafka outbox payload publication, `PaymentResponseMapper` DTO mapping.
   - Observability counters: `payment.provider.retry.total`, `payment.provider.dlq.total`, `payment.provider.requeue.total`, `payment.provider.outage.toggle.total`.
   - Consumer idempotency.
   - Outbox publisher.
