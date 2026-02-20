@@ -125,17 +125,21 @@ jobs:
           fi
 
       - name: Trigger staging deployment
+        id: deploy_staging_trigger
         env:
           STAGING_DEPLOY_WEBHOOK: ${{ secrets.STAGING_DEPLOY_WEBHOOK }}
         run: |
           if [ -z "$STAGING_DEPLOY_WEBHOOK" ]; then
             echo "STAGING_DEPLOY_WEBHOOK not configured; running dry-run deployment gate."
+            echo "deploy_mode=dry_run" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           curl -sS -X POST "$STAGING_DEPLOY_WEBHOOK" -H "Content-Type: application/json" -d '{"service":"ecom-backend","ref":"'"${GITHUB_REF}"'"}'
+          echo "deploy_mode=live" >> "$GITHUB_OUTPUT"
 
       - name: Run staging smoke checks
         id: smoke_staging
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live'
         continue-on-error: true
         env:
           SMOKE_URLS: ${{ secrets.STAGING_SMOKE_URLS }}
@@ -151,7 +155,7 @@ jobs:
 
       - name: Trigger staging rollback on smoke failure
         id: rollback_staging
-        if: steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
         continue-on-error: true
         env:
           ROLLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_WEBHOOK }}
@@ -170,7 +174,7 @@ jobs:
 
       - name: Verify staging rollback callback
         id: rollback_callback_staging
-        if: steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
         continue-on-error: true
         env:
           CALLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_VERIFY_WEBHOOK }}
@@ -198,6 +202,7 @@ jobs:
             echo ""
             echo "| Check | Outcome |"
             echo "|---|---|"
+            echo "| Deploy mode | ${{ steps.deploy_staging_trigger.outputs.deploy_mode || 'unknown' }} |"
             echo "| Smoke checks | ${{ steps.smoke_staging.outcome }} |"
             echo "| Rollback trigger | ${{ steps.rollback_staging.outcome || 'skipped' }} |"
             echo "| Rollback state | ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }} |"
@@ -209,6 +214,7 @@ jobs:
           cat > release-gate/staging-release-gate.json <<EOF
           {
             "environment": "staging",
+            "deployMode": "${{ steps.deploy_staging_trigger.outputs.deploy_mode || 'unknown' }}",
             "smokeOutcome": "${{ steps.smoke_staging.outcome }}",
             "rollbackTriggerOutcome": "${{ steps.rollback_staging.outcome || 'skipped' }}",
             "rollbackState": "${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}",
@@ -227,7 +233,7 @@ jobs:
           path: release-gate/staging-release-gate.json
 
       - name: Enforce staging smoke gate
-        if: steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
         run: |
           echo "Staging smoke checks failed. Rollback state: ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}."
           exit 1

@@ -19,7 +19,7 @@ import com.ecom.auth.dto.RefreshRequest;
 import com.ecom.auth.dto.SignupRequest;
 import com.ecom.auth.dto.TokenResponse;
 import com.ecom.auth.dto.TokenValidationResponse;
-import com.ecom.auth.service.AuthService;
+import com.ecom.auth.service.AuthUseCases;
 
 import jakarta.validation.Valid;
 
@@ -28,9 +28,9 @@ import jakarta.validation.Valid;
 @Validated
 public class AuthController {
 
-    private final AuthService authService;
+    private final AuthUseCases authService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthUseCases authService) {
         this.authService = authService;
     }
 

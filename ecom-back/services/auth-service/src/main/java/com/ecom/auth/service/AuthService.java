@@ -1,11 +1,7 @@
 package com.ecom.auth.service;
 
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,14 +18,15 @@ import com.ecom.auth.repository.UserAccountRepository;
 import io.jsonwebtoken.Claims;
 
 @Service
-public class AuthService {
+public class AuthService implements AuthUseCases {
 
     private final UserAccountRepository userRepo;
     private final RefreshTokenRepository refreshRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
-    private final long refreshTokenTtlDays;
+    private final AuthTokenIssuer authTokenIssuer;
+    private final RefreshTokenGenerator refreshTokenGenerator;
 
     public AuthService(
             UserAccountRepository userRepo,
@@ -37,15 +34,18 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             TokenBlacklistService tokenBlacklistService,
-            @Value("${security.jwt.refresh-token-ttl-days:14}") long refreshTokenTtlDays) {
+            AuthTokenIssuer authTokenIssuer,
+            RefreshTokenGenerator refreshTokenGenerator) {
         this.userRepo = userRepo;
         this.refreshRepo = refreshRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.tokenBlacklistService = tokenBlacklistService;
-        this.refreshTokenTtlDays = refreshTokenTtlDays;
+        this.authTokenIssuer = authTokenIssuer;
+        this.refreshTokenGenerator = refreshTokenGenerator;
     }
 
+    @Override
     @Transactional
     public TokenResponse signup(SignupRequest request) {
         if (userRepo.existsByEmail(request.email())) {
@@ -58,21 +58,23 @@ public class AuthService {
         user.setRole(request.role() == null || request.role().isBlank() ? "CUSTOMER" : request.role());
         UserAccount saved = userRepo.save(user);
 
-        return issueTokens(saved);
+        return authTokenIssuer.issueTokens(saved);
     }
 
+    @Override
     @Transactional
     public TokenResponse oauthLogin(String email) {
         UserAccount user = userRepo.findByEmail(email).orElseGet(() -> {
             UserAccount newUser = new UserAccount();
             newUser.setEmail(email);
-            newUser.setPasswordHash(passwordEncoder.encode(newTokenValue()));
+            newUser.setPasswordHash(passwordEncoder.encode(refreshTokenGenerator.nextToken()));
             newUser.setRole("CUSTOMER");
             return userRepo.save(newUser);
         });
-        return issueTokens(user);
+        return authTokenIssuer.issueTokens(user);
     }
 
+    @Override
     @Transactional
     public TokenResponse login(LoginRequest request) {
         UserAccount user = userRepo.findByEmail(request.email())
@@ -82,9 +84,10 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        return issueTokens(user);
+        return authTokenIssuer.issueTokens(user);
     }
 
+    @Override
     @Transactional
     public TokenResponse refresh(RefreshRequest request) {
         RefreshToken token = refreshRepo.findByToken(request.refreshToken())
@@ -100,9 +103,10 @@ public class AuthService {
         token.setRevoked(true);
         refreshRepo.save(token);
 
-        return issueTokens(user);
+        return authTokenIssuer.issueTokens(user);
     }
 
+    @Override
     @Transactional
     public void logout(String accessToken, String refreshToken) {
         Claims claims = jwtService.parse(accessToken);
@@ -120,6 +124,7 @@ public class AuthService {
         }
     }
 
+    @Override
     public boolean isAccessTokenActive(String accessToken) {
         try {
             Claims claims = jwtService.parse(accessToken);
@@ -128,23 +133,5 @@ public class AuthService {
         } catch (RuntimeException ex) {
             return false;
         }
-    }
-
-    private TokenResponse issueTokens(UserAccount user) {
-        String access = jwtService.generateAccessToken(user.getId(), user.getRole());
-
-        RefreshToken refresh = new RefreshToken();
-        refresh.setUserId(user.getId());
-        refresh.setToken(newTokenValue());
-        refresh.setExpiresAt(Instant.now().plus(refreshTokenTtlDays, ChronoUnit.DAYS));
-        refreshRepo.save(refresh);
-
-        return new TokenResponse(access, refresh.getToken(), "Bearer", jwtService.accessTokenTtlSeconds());
-    }
-
-    private String newTokenValue() {
-        byte[] buffer = new byte[48];
-        new SecureRandom().nextBytes(buffer);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(buffer);
     }
 }

@@ -23,10 +23,11 @@ Public entry base: `/api/*`
 1. Request enters gateway route.
 2. Correlation ID is attached/propagated.
 3. API version guard validates `X-API-Version` for protected `/api/**` paths.
-4. JWT guard applies policy (public read routes bypass token; protected writes require token).
-5. Redis rate limit filter is applied per route.
-6. Circuit breaker routes failures to `/fallback/{service}`.
-7. Request is forwarded to target microservice.
+4. JWT guard applies policy via `GatewayAuthRoutePolicy` (public read routes bypass token; protected writes require token).
+5. `AuthValidationClient` calls auth-service `/api/auth/validate` for bearer-token activity checks.
+6. Redis rate limit filter is applied per route.
+7. Circuit breaker routes failures to `/fallback/{service}`.
+8. Request is forwarded to target microservice.
 
 ### Internal Callback Metrics Flow
 1. Release pipeline posts rollback verification payload to external callback receiver (`CALLBACK_WEBHOOK_URL`).

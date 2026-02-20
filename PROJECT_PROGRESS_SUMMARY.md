@@ -32,6 +32,7 @@ Generated on: 2026-02-19
   - signup/login/refresh/logout/validate
   - JWT + refresh token + Redis blacklist
   - OAuth2 Google login handler
+  - SOLID/DIP boundary via `AuthUseCases` + SRP split (`AuthTokenIssuer`, `RefreshTokenGenerator`)
 - `product-service`
   - CRUD + pagination/filter/sort on MongoDB
 - `inventory-service`
@@ -108,6 +109,8 @@ Generated on: 2026-02-19
   - controllers/consumers depend on `UseCases` interfaces
   - concrete services implement interfaces
   - cart-service now follows DIP/SRP at controller-service-store boundaries
+  - auth-service follows DIP/SRP via `AuthUseCases`, `AuthTokenIssuer`, and `RefreshTokenGenerator`
+  - gateway JWT guard follows SRP via `GatewayAuthRoutePolicy` and `AuthValidationClient`
 - Gateway hardening baseline applied:
   - JWT validation via auth-service
   - correlation ID propagation
@@ -197,8 +200,8 @@ Generated on: 2026-02-19
 
 | Service | Completion | Status |
 |---|---:|---|
-| API Gateway | 95% | In Progress |
-| Auth Service | 80% | In Progress |
+| API Gateway | 97% | In Progress |
+| Auth Service | 85% | In Progress |
 | User Service | 58% | In Progress |
 | Product Service | 70% | In Progress |
 | Inventory Service | 96% | In Progress |

@@ -9,7 +9,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -19,9 +18,10 @@ class JwtAuthFilterPolicyTest {
 
     @Test
     void shouldAllowPublicProductReadWithoutToken() {
+        AuthValidationClient validationClient = org.mockito.Mockito.mock(AuthValidationClient.class);
         JwtAuthFilter filter = new JwtAuthFilter(
-                WebClient.builder(),
-                "http://localhost:8081/api/auth/validate",
+                validationClient,
+                new GatewayAuthRoutePolicy(),
                 new GatewayErrorWriter(new ObjectMapper()));
         TrackingChain chain = new TrackingChain();
 
@@ -35,9 +35,10 @@ class JwtAuthFilterPolicyTest {
 
     @Test
     void shouldRejectProtectedWriteWithoutToken() {
+        AuthValidationClient validationClient = org.mockito.Mockito.mock(AuthValidationClient.class);
         JwtAuthFilter filter = new JwtAuthFilter(
-                WebClient.builder(),
-                "http://localhost:8081/api/auth/validate",
+                validationClient,
+                new GatewayAuthRoutePolicy(),
                 new GatewayErrorWriter(new ObjectMapper()));
         TrackingChain chain = new TrackingChain();
 

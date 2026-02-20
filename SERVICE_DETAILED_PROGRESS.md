@@ -45,6 +45,8 @@ Last updated: 2026-02-19
 - 2026-02-19: Refactored cart-service for SOLID/SRP by splitting ownership resolution and guest/user storage responsibilities (`CartOwnerResolver`, `GuestCartStore`, `UserCartStore`) and switching controller dependency to `CartUseCases`.
 - 2026-02-19: Refactored order-service for SOLID/SRP by extracting item serialization (`OrderItemCodec`), response mapping (`OrderResponseMapper`), and outbox event publishing (`OrderEventPublisher`) from `OrderService`.
 - 2026-02-20: Refactored payment-service for SOLID/SRP by extracting provider retry+DLQ allocation (`ProviderPaymentIdAllocator`), outbox event publication (`PaymentResultPublisher`), and DTO mapping (`PaymentResponseMapper`) from `PaymentService`.
+- 2026-02-20: Refactored auth-service for SOLID/SRP by introducing `AuthUseCases` and extracting token issuance/generation into `AuthTokenIssuer` and `RefreshTokenGenerator`.
+- 2026-02-20: Refactored API gateway JWT guard for SRP by extracting route policy (`GatewayAuthRoutePolicy`) and auth validation client (`AuthValidationClient`) from `JwtAuthFilter`.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -62,6 +64,7 @@ Last updated: 2026-02-19
   - Standardized JSON error payloads across auth/version/rate-limit filters.
   - Route policy tuning: read-only product/search APIs are public, write paths remain protected.
   - Route-level circuit breakers with fallback responses (`/fallback/{service}`).
+  - SRP split: `JwtAuthFilter` orchestration with `GatewayAuthRoutePolicy` and `AuthValidationClient` collaborators.
   - Resilience4j circuit breaker and time limiter baseline configuration.
   - Internal release-gate callback metrics ingestion endpoint (`POST /internal/release-gate/callbacks`) for Prometheus-scraped rollback callback counters.
   - Zipkin tracing export and trace-log correlation pattern (`traceId`, `spanId`).
@@ -119,6 +122,8 @@ Last updated: 2026-02-19
   - Access-token blacklist (Redis).
 - Patterns:
   - JWT + refresh token.
+  - DIP via `AuthUseCases` (`AuthController` and OAuth2 success handler depend on interface).
+  - SRP split: `AuthService` orchestration, `AuthTokenIssuer` token issuance/persistence, `RefreshTokenGenerator` secure token generation.
   - Token blacklist.
   - OAuth2 login handler.
   - Prometheus metrics export + Zipkin tracing baseline and trace-log correlation.

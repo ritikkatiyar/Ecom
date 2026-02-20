@@ -9,7 +9,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import com.ecom.auth.dto.TokenResponse;
-import com.ecom.auth.service.AuthService;
+import com.ecom.auth.service.AuthUseCases;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
@@ -19,10 +19,10 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final AuthService authService;
+    private final AuthUseCases authService;
     private final ObjectMapper objectMapper;
 
-    public OAuth2LoginSuccessHandler(AuthService authService, ObjectMapper objectMapper) {
+    public OAuth2LoginSuccessHandler(AuthUseCases authService, ObjectMapper objectMapper) {
         this.authService = authService;
         this.objectMapper = objectMapper;
     }
