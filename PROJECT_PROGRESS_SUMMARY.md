@@ -51,6 +51,7 @@ Generated on: 2026-02-19
   - emits `order.created.v1` through outbox
   - consumes payment results + inventory reservation failure events
   - timeout sweep + `order.timed-out.v1` publish + failed-outbox replay endpoint
+  - SRP split with dedicated item codec, response mapper, and event publisher components
 - `payment-service`
   - payment intent, webhook handling, idempotency checks
   - consumes `order.created.v1`
@@ -201,7 +202,7 @@ Generated on: 2026-02-19
 | Product Service | 70% | In Progress |
 | Inventory Service | 96% | In Progress |
 | Cart Service | 78% | In Progress |
-| Order Service | 92% | In Progress |
+| Order Service | 94% | In Progress |
 | Payment Service | 90% | In Progress |
 | Review Service | 56% | In Progress |
 | Search Service | 93% | In Progress |

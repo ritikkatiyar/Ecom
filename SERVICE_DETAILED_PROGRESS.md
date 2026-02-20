@@ -43,6 +43,7 @@ Last updated: 2026-02-19
 - 2026-02-19: Implemented review-service review/rating CRUD and moderation APIs with MySQL entity/repository model, `ReviewUseCases` DIP boundary, and OpenAPI/observability baseline wiring.
 - 2026-02-19: Added automated release-gate drill log recorder (`record_release_gate_drill_log.py`) and wired `release-gate-drill.yml` to publish persistent delta-log rows (`release-gate-drill-log.md`).
 - 2026-02-19: Refactored cart-service for SOLID/SRP by splitting ownership resolution and guest/user storage responsibilities (`CartOwnerResolver`, `GuestCartStore`, `UserCartStore`) and switching controller dependency to `CartUseCases`.
+- 2026-02-19: Refactored order-service for SOLID/SRP by extracting item serialization (`OrderItemCodec`), response mapping (`OrderResponseMapper`), and outbox event publishing (`OrderEventPublisher`) from `OrderService`.
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -266,7 +267,8 @@ Last updated: 2026-02-19
 - Patterns:
   - Saga coordinator role for order status.
   - Consumer idempotency.
-  - Outbox publisher.
+  - Outbox publisher via dedicated `OrderEventPublisher` component.
+  - SRP split: `OrderService` orchestration, `OrderItemCodec` JSON codec, `OrderResponseMapper` DTO mapping.
   - Scheduled reliability cleanup for outbox and consumed-event dedup records.
   - Scheduled timeout sweep for stuck `PAYMENT_PENDING` orders.
   - Manual replay trigger for failed outbox events.

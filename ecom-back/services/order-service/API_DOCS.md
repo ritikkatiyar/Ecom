@@ -22,8 +22,10 @@ Base path: `/api/orders`
 - Redis: not required in order service currently.
 
 ## Flow
-1. `POST /` creates `OrderRecord` with initial state.
-2. Order event is inserted into `OutboxEventRecord`.
-3. Scheduled outbox publisher sends Kafka events and marks outbox state.
-4. Kafka consumers update order status idempotently using `ConsumedEventRecord`.
-5. Timeout scheduler moves stale `PAYMENT_PENDING` orders to timeout flow.
+1. `OrderController` delegates to `OrderUseCases` (`OrderService`) for orchestration.
+2. `POST /` creates `OrderRecord` with initial `CREATED` state.
+3. `OrderItemCodec` serializes line items into `itemsJson` and `OrderEventPublisher` enqueues `order.created.v1` into `OutboxEventRecord`.
+4. `OrderService` transitions order to `PAYMENT_PENDING`; `OrderResponseMapper` maps persistence model to API DTO.
+5. Scheduled outbox publisher sends Kafka events and marks outbox state.
+6. Kafka consumers update order status idempotently using `ConsumedEventRecord`.
+7. Timeout scheduler moves stale `PAYMENT_PENDING` orders to `CANCELLED` and publishes `order.timed-out.v1`.

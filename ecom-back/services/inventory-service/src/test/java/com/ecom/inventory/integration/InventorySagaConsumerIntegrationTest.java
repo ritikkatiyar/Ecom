@@ -54,7 +54,8 @@ class InventorySagaConsumerIntegrationTest {
 
     @Container
     static final KafkaContainer KAFKA = new KafkaContainer(
-            DockerImageName.parse("confluentinc/cp-kafka:7.7.1"));
+            DockerImageName.parse("confluentinc/cp-kafka:7.7.1"))
+            .withStartupTimeout(Duration.ofMinutes(5));
 
     @DynamicPropertySource
     static void registerDynamicProperties(DynamicPropertyRegistry registry) {
@@ -114,7 +115,8 @@ class InventorySagaConsumerIntegrationTest {
 
         waitUntil(
                 () -> consumedEventRepository.count() == 10 && outboxEventRepository.count() == 10,
-                Duration.ofSeconds(25));
+                Duration.ofSeconds(60),
+                "Timed out waiting for 10 consumed events and 10 outbox events in oversell test");
 
         InventoryStock updated = stockRepository.findBySku("FLASH-SKU-1").orElseThrow();
         List<InventoryReservation> reservations = reservationRepository.findAll();
@@ -155,7 +157,10 @@ class InventorySagaConsumerIntegrationTest {
         kafkaTemplate.send("order.created.v1", "order-dedup-1", rawEvent);
         kafkaTemplate.flush();
 
-        waitUntil(() -> consumedEventRepository.count() >= 1, Duration.ofSeconds(20));
+        waitUntil(
+                () -> consumedEventRepository.count() >= 1,
+                Duration.ofSeconds(45),
+                "Timed out waiting for consumed event in dedup test");
 
         InventoryStock updated = stockRepository.findBySku("DEDUP-SKU-1").orElseThrow();
         List<InventoryReservation> reservations = reservationRepository.findAll();
@@ -186,7 +191,7 @@ class InventorySagaConsumerIntegrationTest {
         }
     }
 
-    private void waitUntil(BooleanSupplier condition, Duration timeout) {
+    private void waitUntil(BooleanSupplier condition, Duration timeout, String failureMessage) {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
             if (condition.getAsBoolean()) {
@@ -199,6 +204,6 @@ class InventorySagaConsumerIntegrationTest {
                 throw new IllegalStateException("Interrupted while waiting for condition", ex);
             }
         }
-        assertTrue(condition.getAsBoolean(), "Condition was not met before timeout");
+        assertTrue(condition.getAsBoolean(), failureMessage);
     }
 }

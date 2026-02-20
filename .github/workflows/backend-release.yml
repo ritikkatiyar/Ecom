@@ -35,10 +35,31 @@ jobs:
 
       - name: Quality test gate
         run: |
-          mvn -f ecom-back/services/payment-service/pom.xml test
-          mvn -f ecom-back/services/inventory-service/pom.xml test
-          mvn -f ecom-back/services/search-service/pom.xml test
-          mvn -f ecom-back/api-gateway/pom.xml test
+          run_service_tests() {
+            local pom="$1"
+            local report="$2"
+            if ! mvn -f "$pom" test; then
+              echo "Test failure for $pom"
+              if [ -f "$report" ]; then
+                echo "---- Surefire report: $report ----"
+                cat "$report"
+              fi
+              exit 1
+            fi
+          }
+
+          run_service_tests \
+            ecom-back/services/payment-service/pom.xml \
+            ecom-back/services/payment-service/target/surefire-reports/com.ecom.payment.service.PaymentServiceTest.txt
+          run_service_tests \
+            ecom-back/services/inventory-service/pom.xml \
+            ecom-back/services/inventory-service/target/surefire-reports/com.ecom.inventory.integration.InventorySagaConsumerIntegrationTest.txt
+          run_service_tests \
+            ecom-back/services/search-service/pom.xml \
+            ecom-back/services/search-service/target/surefire-reports/com.ecom.search.service.SearchServiceTest.txt
+          run_service_tests \
+            ecom-back/api-gateway/pom.xml \
+            ecom-back/api-gateway/target/surefire-reports/com.ecom.gateway.filter.JwtAuthFilterTest.txt
           python ecom-back/scripts/check_search_dataset_freshness.py
           python ecom-back/scripts/check_api_docs.py
 

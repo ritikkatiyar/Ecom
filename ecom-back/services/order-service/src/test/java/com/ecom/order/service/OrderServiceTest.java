@@ -12,11 +12,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.ecom.order.dto.CreateOrderRequest;
 import com.ecom.order.dto.OrderItemRequest;
@@ -33,21 +34,26 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private OutboxService outboxService;
-
-    @Mock
     private OutboxEventRepository outboxEventRepository;
 
-    @InjectMocks
-    private OrderService orderService = new OrderService(
-            orderRepository,
-            outboxEventRepository,
-            new ObjectMapper(),
-            outboxService,
-            new SimpleMeterRegistry(),
-            "order.created.v1",
-            "order.timed-out.v1",
-            15);
+    @Mock
+    private OrderEventPublisher orderEventPublisher;
+
+    private OrderService orderService;
+
+    @BeforeEach
+    void setUp() {
+        OrderItemCodec orderItemCodec = new OrderItemCodec(new ObjectMapper());
+        OrderResponseMapper orderResponseMapper = new OrderResponseMapper(orderItemCodec);
+        orderService = new OrderService(
+                orderRepository,
+                outboxEventRepository,
+                orderItemCodec,
+                orderResponseMapper,
+                orderEventPublisher,
+                new SimpleMeterRegistry(),
+                15);
+    }
 
     @Test
     void createOrderCalculatesTotalAndMovesToPaymentPending() {
