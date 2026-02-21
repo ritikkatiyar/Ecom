@@ -57,5 +57,8 @@ jobs:
       - name: Validate search relevance dataset freshness
         run: python ecom-back/scripts/check_search_dataset_freshness.py
 
+      - name: Validate event contract registry
+        run: python ecom-back/scripts/check_event_contracts.py
+
       - name: Validate service API docs structure
         run: python ecom-back/scripts/check_api_docs.py

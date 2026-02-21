@@ -1,0 +1,26 @@
+---
+description: Keep MD status and progress docs in sync during development
+alwaysApply: true
+---
+
+# MD Documentation Sync
+
+When making frontend or backend changes, **update the relevant MD files** in the repo root and ecom-back:
+
+## Files to Update
+
+| When | Files |
+|------|-------|
+| **Service/feature changes** | `SERVICE_STATUS.md`, `SERVICE_DETAILED_PROGRESS.md` |
+| **Overall progress** | `PROJECT_PROGRESS_SUMMARY.md`, `PHASE_COMPLETION_CHECKLIST.md` |
+| **Release/launch** | `LAUNCH_PLAN.md`, `RELEASE_ASAP_CHECKLIST.md` |
+| **Scope changes** | `V1_SCOPE.md` |
+| **Service API changes** | `ecom-back/<service>/API_DOCS.md` |
+
+## Conventions
+
+- Update `Last updated:` date (format `YYYY-MM-DD`) at top of each modified file.
+- Add dated entries to `SERVICE_DETAILED_PROGRESS.md` Change Log for notable changes.
+- Update % complete in `SERVICE_STATUS.md` when service/frontend progress changes.
+- Mark completed checklist items with `[x]` in `PHASE_COMPLETION_CHECKLIST.md`.
+- Keep `ecom-storefront` as primary frontend; `ecom-frontend` (Vite) is deprecated.

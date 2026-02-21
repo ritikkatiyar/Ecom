@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/* Stitch design system - Voluspa / Essence */
+:root {
+  --background: #F8F6F3;
+  --foreground: #0f172a;
+  --primary: #2badee;
+  --background-dark: #101c22;
+  --ivory-dark: #EFEBE7;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-background-dark: var(--background-dark);
+  --color-ivory-dark: var(--ivory-dark);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), Georgia, serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #101c22;
+    --foreground: #f1f5f9;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-newsreader), Georgia, serif;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-size: 24px;
+}

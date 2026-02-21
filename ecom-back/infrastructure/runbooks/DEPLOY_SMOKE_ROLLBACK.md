@@ -70,6 +70,7 @@ Outputs:
 - Purpose: execute staged + production rollback/callback drills and generate delta report automatically.
 - Schedule: weekly Thursday (`11:00 UTC`) + manual trigger.
 - Script entrypoint: `ecom-back/scripts/run_release_gate_drill.py`
+- Evidence quality gate: `ecom-back/scripts/check_release_gate_drill_evidence.py` fails workflow when staging/production drill status is `missing` or `attention_required`.
 
 ### Runbook Log Template
 | Date (UTC) | Staging Status | Production Status | Delta Applied | Owner | Notes |

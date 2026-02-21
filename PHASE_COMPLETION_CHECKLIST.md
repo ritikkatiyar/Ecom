@@ -1,6 +1,6 @@
 # Amazon Lite Phase Completion Checklist
 
-Last updated: 2026-02-19
+Last updated: 2026-02-21
 
 ## Phase 1 - System Design (HLD)
 Status: `Done`
@@ -24,14 +24,19 @@ Status: `In Progress (advanced)`
 - [x] Kafka event choreography for order/payment/inventory/search/notification.
 - [x] Idempotent consumers + outbox replay/recovery mechanisms.
 - [x] Rollback callback telemetry + calibrated alert rules + ops drill cadence.
-- [ ] Schema governance tightening across all event contracts pending.
+- [x] Schema governance tightening across event contracts (registry + schema files + CI validator gate).
 - [ ] Final staged/prod rollback drill execution evidence + tuning deltas pending.
 
 ## Phase 4 - Frontend (Next.js Production Style)
-Status: `Not Started (full phase)`
-- [ ] Server/Client component architecture integration with all backend contracts.
+Status: `In Progress (55%)`
+- [x] Frontend kickoff started with beta release scaffolding (feature flags + admin guard baseline).
+- [x] Next.js storefront scaffolded (`ecom-storefront`) with App Router and stitch design system.
+- [x] Core routes: home, shop, products/[id], search, cart, account, collections.
+- [x] Header nav component, API proxy via `NEXT_PUBLIC_BACKEND_URL`.
+- [ ] Wire backend APIs (products, search, cart, auth) to storefront. (Products admin CRUD + image upload done.)
+- [ ] Server/Client component architecture integration with backend contracts.
 - [ ] SSR product pages + infinite scroll + debounced search + optimistic cart.
-- [ ] State/query architecture finalization (Zustand/Redux + React Query).
+- [ ] State/query architecture (React Query/SWR for server state).
 
 ## Phase 5 - Deployment Architecture
 Status: `In Progress`
@@ -60,7 +65,7 @@ Status: `In Progress`
 - [ ] 10k-user sustained scenario validation + production-profile budget signoff pending.
 
 ## Immediate Next 3 Execution Items
-1. Execute and review scheduled release-gate drill artifacts, then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
-2. SOLID maturity loop: cart-service, order-service, payment-service, auth-service, and gateway SRP/DIP refactors completed.
-3. Frontend phase kickoff with API integration for product/search/cart flows.
+1. Execute and review scheduled release-gate drill artifacts until `check_release_gate_drill_evidence.py` passes (staging + production non-missing), then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
+2. Schema governance baseline is now enforced via `ecom-back/contracts/events/event-contracts.json` and `check_event_contracts.py`.
+3. Wire ecom-storefront to backend APIs (products/search/cart/auth) and complete browse/search/cart flows.
 

@@ -1,0 +1,71 @@
+{
+  "version": "1",
+  "events": {
+    "order.created.v1": {
+      "schema_version": "v1",
+      "producer": "order-service",
+      "consumers": ["payment-service", "inventory-service", "notification-service"],
+      "schema_file": "schemas/order.created.v1.json"
+    },
+    "order.timed-out.v1": {
+      "schema_version": "v1",
+      "producer": "order-service",
+      "consumers": ["inventory-service"],
+      "schema_file": "schemas/order.timed-out.v1.json"
+    },
+    "payment.authorized.v1": {
+      "schema_version": "v1",
+      "producer": "payment-service",
+      "consumers": ["order-service", "inventory-service", "notification-service"],
+      "schema_file": "schemas/payment.authorized.v1.json"
+    },
+    "payment.failed.v1": {
+      "schema_version": "v1",
+      "producer": "payment-service",
+      "consumers": ["order-service", "inventory-service", "notification-service"],
+      "schema_file": "schemas/payment.failed.v1.json"
+    },
+    "inventory.reserved.v1": {
+      "schema_version": "v1",
+      "producer": "inventory-service",
+      "consumers": [],
+      "schema_file": "schemas/inventory.reserved.v1.json"
+    },
+    "inventory.reservation.failed.v1": {
+      "schema_version": "v1",
+      "producer": "inventory-service",
+      "consumers": ["order-service"],
+      "schema_file": "schemas/inventory.reservation.failed.v1.json"
+    },
+    "product.upserted.v1": {
+      "schema_version": "v1",
+      "producer": "product-service",
+      "consumers": ["search-service"],
+      "schema_file": "schemas/product.upserted.v1.json"
+    },
+    "product.deleted.v1": {
+      "schema_version": "v1",
+      "producer": "product-service",
+      "consumers": ["search-service"],
+      "schema_file": "schemas/product.deleted.v1.json"
+    },
+    "notification.alert.v1": {
+      "schema_version": "v1",
+      "producer": "notification-service",
+      "consumers": [],
+      "schema_file": "schemas/notification.alert.v1.json"
+    },
+    "notification.dead-letter.v1": {
+      "schema_version": "v1",
+      "producer": "notification-service",
+      "consumers": [],
+      "schema_file": "schemas/notification.dead-letter.v1.json"
+    },
+    "notification.dlq.v1": {
+      "schema_version": "v1",
+      "producer": "notification-service",
+      "consumers": [],
+      "schema_file": "schemas/notification.dlq.v1.json"
+    }
+  }
+}

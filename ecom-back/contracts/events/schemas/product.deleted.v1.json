@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "product.deleted.v1 payload",
+  "type": "object",
+  "required": ["productId"],
+  "properties": {
+    "productId": { "type": "string", "minLength": 1 }
+  }
+}

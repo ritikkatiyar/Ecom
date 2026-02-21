@@ -1,6 +1,6 @@
 # Service Detailed Progress
 
-Last updated: 2026-02-19
+Last updated: 2026-02-21
 
 ## Change Log (Dated)
 - 2026-02-14: Added gateway standardized JSON error payloads and route policy tuning.
@@ -47,6 +47,52 @@ Last updated: 2026-02-19
 - 2026-02-20: Refactored payment-service for SOLID/SRP by extracting provider retry+DLQ allocation (`ProviderPaymentIdAllocator`), outbox event publication (`PaymentResultPublisher`), and DTO mapping (`PaymentResponseMapper`) from `PaymentService`.
 - 2026-02-20: Refactored auth-service for SOLID/SRP by introducing `AuthUseCases` and extracting token issuance/generation into `AuthTokenIssuer` and `RefreshTokenGenerator`.
 - 2026-02-20: Refactored API gateway JWT guard for SRP by extracting route policy (`GatewayAuthRoutePolicy`) and auth validation client (`AuthValidationClient`) from `JwtAuthFilter`.
+- 2026-02-20: Added event contract governance baseline via `contracts/events/event-contracts.json`, per-event schema files, and CI validator script `check_event_contracts.py` wired into `backend-quality.yml` and `backend-release.yml`.
+- 2026-02-20: Added release-gate drill evidence enforcement via `check_release_gate_drill_evidence.py` and wired it into `release-gate-drill.yml` to fail when staged/prod evidence is still `missing` or `attention_required`.
+- 2026-02-21: Scaffolded Next.js storefront (`ecom-storefront`) with App Router, stitch design system (Voluspa style), routes (home/shop/products/search/cart/account/collections), Header nav, API proxy to gateway. Deprecated `ecom-frontend` (Vite).
+- 2026-02-21: Phase 1 core infrastructure: apiClient (X-API-Version, X-Correlation-Id, Auth header, 401 refresh retry, GET retry), AuthContext (JWT decode, roles, login/signup/logout, sessionStorage), AccountGuard/AdminGuard, React Query provider, login/signup/unauthorized pages, route groups (account), (admin).
+- 2026-02-21: Admin console: AdminSidebar (stitch design), admin dashboard, Products CRUD (list/create/edit), ProductForm, product API proxy (route handlers), login redirects admins to /admin/dashboard. No separate admin login.
+- 2026-02-21: Product service: Cloudinary image upload integration (`POST /api/products/images`), Product `imageUrls` field, conditional Cloudinary beans when `cloudinary.cloud-name` set. Admin ProductForm image picker (upload to Cloudinary, preview, remove). `lib/api/products.ts` and `/api/products/images` proxy.
+
+## Frontend / Storefront (`ecom-storefront`)
+- Stack:
+  - Next.js 15 (App Router), TypeScript, Tailwind CSS v4
+  - Newsreader + Inter fonts, Material Symbols icons
+  - @tanstack/react-query (staleTime, retry policy)
+  - apiClient: X-API-Version, X-Correlation-Id, Bearer token, 401 refresh retry, GET retry
+  - AuthContext: JWT decode, roles (USER, ADMIN), login/signup/logout
+  - Route guards: AccountGuard (/account), AdminGuard (/admin)
+- Routes:
+  - `/` – Home
+  - `/shop` – Product listing
+  - `/products/[id]` – Product detail (stitch PDP)
+  - `/search` – Search
+  - `/cart` – Cart
+  - `/checkout` – Checkout (placeholder)
+  - `/login`, `/signup` – Auth
+  - `/account` – Account (USER/ADMIN, guarded)
+  - `/admin/dashboard` – Admin dashboard
+  - `/admin/products` – Product list
+  - `/admin/products/new` – Create product
+  - `/admin/products/[id]/edit` – Edit product
+  - `/admin/orders` – Orders (placeholder)
+  - `/unauthorized` – Insufficient role
+  - `/collections` – Collections
+- Design (stitch):
+  - Primary `#2badee`, background `#F8F6F3`, ivory `#EFEBE7`
+  - Design source: `stitch/voluspa_product_page_1`, `stitch/admin_dashboard`, `stitch/user_account_page`
+- Config:
+  - `NEXT_PUBLIC_BACKEND_URL` – API Gateway URL (default `http://localhost:8080`)
+  - Next.js rewrites `/api/*` to backend gateway
+- Verification:
+  - `npm run dev` starts at `http://localhost:3000`
+- Pending:
+  - Wire products API for storefront browse/search (admin CRUD + image upload done)
+  - Wire search API (`GET /api/search/products`)
+  - Wire cart API (`GET/POST /api/cart`, `POST /api/cart/items`, etc.)
+  - Wire auth API (`POST /api/auth/signup`, `/login`, etc.)
+  - Add feature flags (beta banner, admin console) from gateway `/internal/frontend-flags`
+  - Add state management (React Query/SWR) and optimistic cart
 
 ## API Gateway (`ecom-back/api-gateway`)
 - APIs:
@@ -164,10 +210,11 @@ Last updated: 2026-02-19
   - `GET /api/products/{id}`
   - `DELETE /api/products/{id}`
   - `GET /api/products` (pagination/filter/sort/search)
+  - `POST /api/products/images` (multipart image upload → Cloudinary)
 - Kafka in/out:
   - No producer/consumer implemented yet for product index sync (currently search has direct indexing APIs and optional consumer).
 - Data model:
-  - `Product` (MongoDB).
+  - `Product` (MongoDB): id, name, description, category, brand, price, active, colors, sizes, imageUrls.
 - Patterns:
   - DIP via `ProductUseCases`.
   - OpenAPI + validation.

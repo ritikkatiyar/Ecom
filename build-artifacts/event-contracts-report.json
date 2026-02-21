@@ -1,0 +1,31 @@
+{
+  "passed": true,
+  "errors": [],
+  "warnings": [],
+  "discoveredEvents": [
+    "inventory.reservation.failed.v1",
+    "inventory.reserved.v1",
+    "notification.alert.v1",
+    "notification.dead-letter.v1",
+    "notification.dlq.v1",
+    "order.created.v1",
+    "order.timed-out.v1",
+    "payment.authorized.v1",
+    "payment.failed.v1",
+    "product.deleted.v1",
+    "product.upserted.v1"
+  ],
+  "registeredEvents": [
+    "inventory.reservation.failed.v1",
+    "inventory.reserved.v1",
+    "notification.alert.v1",
+    "notification.dead-letter.v1",
+    "notification.dlq.v1",
+    "order.created.v1",
+    "order.timed-out.v1",
+    "payment.authorized.v1",
+    "payment.failed.v1",
+    "product.deleted.v1",
+    "product.upserted.v1"
+  ]
+}

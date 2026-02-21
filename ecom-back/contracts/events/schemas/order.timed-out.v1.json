@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "order.timed-out.v1 payload",
+  "type": "object",
+  "required": ["orderId", "userId", "status", "timedOutAt"],
+  "properties": {
+    "orderId": { "type": "string", "minLength": 1 },
+    "userId": { "type": "integer" },
+    "status": { "type": "string" },
+    "timedOutAt": { "type": "string" }
+  }
+}

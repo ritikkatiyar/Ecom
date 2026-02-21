@@ -1,11 +1,11 @@
 # Amazon Lite Progress Summary
 
-Generated on: 2026-02-19
+Generated on: 2026-02-21
 
 ## Overall Snapshot
 - Backend (Phase 2 target scope): `~99% complete`
 - Full backend production maturity target: `~40% complete`
-- Frontend (final Next.js production architecture): `~20% complete`
+- Frontend (beta release track): `~55% complete`
 
 ## Completed So Far
 
@@ -35,6 +35,7 @@ Generated on: 2026-02-19
   - SOLID/DIP boundary via `AuthUseCases` + SRP split (`AuthTokenIssuer`, `RefreshTokenGenerator`)
 - `product-service`
   - CRUD + pagination/filter/sort on MongoDB
+  - Cloudinary image upload (`POST /api/products/images`), Product `imageUrls`, admin ProductForm image picker
 - `inventory-service`
   - stock upsert/get + reserve/release/confirm
   - MySQL persistence + Redis lock
@@ -135,6 +136,18 @@ Generated on: 2026-02-19
 - Detailed per-service tracker maintained in `SERVICE_DETAILED_PROGRESS.md`.
 - API-level docs are now maintained alongside each service via `API_DOCS.md`.
 - CI quality workflow added: `.github/workflows/backend-quality.yml` (service tests + dataset freshness + API docs validation).
+- Event contract governance gate added:
+  - contract registry: `ecom-back/contracts/events/event-contracts.json`
+  - per-event JSON schema files under `ecom-back/contracts/events/schemas/`
+  - validator script: `ecom-back/scripts/check_event_contracts.py`
+  - enforced in both `backend-quality.yml` and `backend-release.yml`
+- Next.js storefront (`ecom-storefront`) scaffolded:
+  - App Router with routes: `/`, `/shop`, `/products/[id]`, `/search`, `/cart`, `/account`, `/collections`
+  - stitch design system (Voluspa style): primary `#2badee`, background `#F8F6F3`, fonts Newsreader/Inter, Material Symbols
+  - API proxy via `NEXT_PUBLIC_BACKEND_URL` (rewrites `/api/*` to gateway)
+  - launch docs: `LAUNCH_PLAN.md`, `RELEASE_ASAP_CHECKLIST.md`, `V1_SCOPE.md`
+  - gateway runtime flags endpoint: `GET /internal/frontend-flags` (for future feature flags)
+  - legacy `ecom-frontend` (Vite) deprecated; storefront is primary
 - Release pipeline workflow added: `.github/workflows/backend-release.yml` with staged promotion (`quality -> package -> staging -> production`) and environment gates.
 - Load test harness added: `ecom-back/load-tests/k6/flash-sale-inventory.js` with SLO thresholds (`p95`, success-rate, oversell=0) and `ecom-back/load-tests/run-flash-sale.ps1`.
 - Baseline k6 suites added for browse/cart/checkout:
@@ -185,6 +198,7 @@ Generated on: 2026-02-19
   - workflow: `.github/workflows/release-gate-drill.yml`
   - drill runner script: `ecom-back/scripts/run_release_gate_drill.py`
   - produces `staging-release-gate.json`, `production-release-gate.json`, and evaluated tuning delta report artifacts
+  - evidence-quality gate script: `ecom-back/scripts/check_release_gate_drill_evidence.py` (fails drill workflow when staged/prod status is `missing` or `attention_required`)
 - Search dataset ownership automation added:
   - rotation config: `search-relevance-dataset-ownership.json`
   - assignment script: `ecom-back/scripts/assign_search_dataset_reviewer.py`
@@ -203,7 +217,7 @@ Generated on: 2026-02-19
 | API Gateway | 97% | In Progress |
 | Auth Service | 85% | In Progress |
 | User Service | 58% | In Progress |
-| Product Service | 70% | In Progress |
+| Product Service | 75% | In Progress |
 | Inventory Service | 96% | In Progress |
 | Cart Service | 78% | In Progress |
 | Order Service | 94% | In Progress |

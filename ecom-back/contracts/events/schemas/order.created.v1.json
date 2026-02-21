@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "order.created.v1 payload",
+  "type": "object",
+  "required": ["orderId", "userId", "currency", "status", "items", "createdAt"],
+  "properties": {
+    "orderId": { "type": "string", "minLength": 1 },
+    "userId": { "type": "integer" },
+    "currency": { "type": "string", "minLength": 3, "maxLength": 3 },
+    "status": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["productId", "sku", "quantity", "unitPrice"],
+        "properties": {
+          "productId": { "type": "string" },
+          "sku": { "type": "string" },
+          "quantity": { "type": "integer", "minimum": 1 },
+          "unitPrice": { "type": "string" }
+        }
+      }
+    }
+  }
+}

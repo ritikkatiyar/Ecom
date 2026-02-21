@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "notification.dead-letter.v1 payload",
+  "type": "object",
+  "required": ["eventId", "eventType", "recipientEmail", "reason", "retries", "sourceTopic"],
+  "properties": {
+    "eventId": { "type": "string", "minLength": 1 },
+    "eventType": { "type": "string", "minLength": 1 },
+    "userId": { "type": "integer" },
+    "recipientEmail": { "type": "string" },
+    "subject": { "type": "string" },
+    "body": { "type": "string" },
+    "reason": { "type": ["string", "null"] },
+    "retries": { "type": "integer", "minimum": 0 },
+    "sourceTopic": { "type": "string" }
+  }
+}

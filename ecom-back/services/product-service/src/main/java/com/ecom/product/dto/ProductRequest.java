@@ -15,6 +15,7 @@ public record ProductRequest(
         @NotNull @DecimalMin("0.0") BigDecimal price,
         List<String> colors,
         List<String> sizes,
-        Boolean active
+        Boolean active,
+        List<String> imageUrls
 ) {
 }

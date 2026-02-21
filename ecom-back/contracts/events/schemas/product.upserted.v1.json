@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "product.upserted.v1 payload",
+  "type": "object",
+  "required": ["productId", "name", "price"],
+  "properties": {
+    "productId": { "type": "string", "minLength": 1 },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "category": { "type": "string" },
+    "brand": { "type": "string" },
+    "price": { "type": ["string", "number"] },
+    "colors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sizes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "active": { "type": "boolean" }
+  }
+}

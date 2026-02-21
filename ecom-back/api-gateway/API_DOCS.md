@@ -6,6 +6,7 @@ Public entry base: `/api/*`
 - Gateway routes incoming `/api/*` traffic to downstream microservices.
 - Fallback endpoint: `GET /fallback/{service}` for circuit-breaker failover response.
 - Internal release gate callback endpoint: `POST /internal/release-gate/callbacks` (records rollback callback telemetry for Prometheus/Grafana).
+- Internal frontend flags endpoint: `GET /internal/frontend-flags` (beta/admin UI runtime toggles).
 
 ## Entities
 - No domain entities persisted in gateway.
@@ -34,3 +35,8 @@ Public entry base: `/api/*`
 2. The same payload is optionally posted to gateway internal endpoint (`CALLBACK_METRICS_URL` -> `/internal/release-gate/callbacks`).
 3. Gateway increments release-gate callback counters for dashboard/alert queries.
 4. Prometheus scrapes gateway `/actuator/prometheus`, and Grafana panels read these counters.
+
+### Internal Frontend Flags Flow
+1. Frontend requests `/internal/frontend-flags` on startup.
+2. Gateway returns runtime toggles (`betaBannerEnabled`, `adminConsoleEnabled`).
+3. Frontend merges gateway flags with local env flags for safe rollout control.

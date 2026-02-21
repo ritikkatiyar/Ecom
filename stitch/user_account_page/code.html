@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>My Account | Luxe Fragrance</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2badee",
+                        "background-light": "#fcfaf8", // Soft Ivory/Sand
+                        "background-dark": "#101c22",
+                    },
+                    fontFamily: {
+                        "display": ["Newsreader", "serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-display {
+            font-family: 'Newsreader', serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+<!-- Top Navigation Bar -->
+<header class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center h-20">
+<div class="flex items-center gap-12">
+<a class="flex items-center gap-2" href="#">
+<span class="text-primary material-symbols-outlined text-3xl">fluid</span>
+<h1 class="font-display text-2xl font-bold tracking-tight">LUXE FRAGRANCE</h1>
+</a>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-sm font-medium hover:text-primary transition-colors uppercase tracking-widest" href="#">Shop</a>
+<a class="text-sm font-medium hover:text-primary transition-colors uppercase tracking-widest" href="#">Collections</a>
+<a class="text-sm font-medium hover:text-primary transition-colors uppercase tracking-widest" href="#">Journal</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800 rounded-full px-4 py-2">
+<span class="material-symbols-outlined text-slate-500 text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Search scents..." type="text"/>
+</div>
+<button class="relative p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">shopping_bag</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-slate-200">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Close up portrait of Elena Gilbert" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZeIyFRpJ9ANHDhUvrFSSTdziiNoKs0yqZREh0LptJr29BicqaE6Kdbe11e2KhoJoKut_Zu63CXG_BgTrVkbcDl42LmsrMhcGkMPeEr9wA7hCDOyqdlZau_izK4reI-zYYDLFS1Ozioi4GmzyEWqviywSRmAXZas20PVFPpYOSJcNqjE7IFVpKQXiwTLE-Q9eeRCMYz6NUpVaJh3Tv9_dOgu6j0grwzMuR3WvsmhL3M0HG3FZ8Cq_ey3aIhc0GjCERSRbo-O79VA0"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+<div class="flex flex-col lg:flex-row gap-12">
+<!-- Sidebar Navigation -->
+<aside class="w-full lg:w-64 flex-shrink-0">
+<div class="sticky top-32">
+<div class="mb-8">
+<h2 class="font-display text-3xl mb-2">Elena Gilbert</h2>
+<p class="text-slate-500 text-sm italic">Member since October 2022</p>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-lg font-medium" href="#">
+<span class="material-symbols-outlined">person</span>
+                            Profile Overview
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+                            Order History
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">temp_preferences_custom</span>
+                            My Scent Profile
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">location_on</span>
+                            Addresses
+                        </a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">redeem</span>
+                            Rewards Points
+                        </a>
+<div class="pt-8 mt-8 border-t border-slate-200 dark:border-slate-800">
+<button class="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg w-full transition-colors">
+<span class="material-symbols-outlined">logout</span>
+                                Sign Out
+                            </button>
+</div>
+</nav>
+</div>
+</aside>
+<!-- Main Content -->
+<div class="flex-1 space-y-12">
+<!-- Welcome Section -->
+<section>
+<div class="bg-white dark:bg-slate-900 p-8 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+<div>
+<h3 class="font-display text-4xl mb-2">Welcome back, Elena</h3>
+<p class="text-slate-500 max-w-md">Your fragrance journey continues. You have <span class="text-primary font-bold">2,450 points</span> available for your next signature scent.</p>
+</div>
+<div class="flex gap-4">
+<div class="text-center px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+<p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Total Orders</p>
+<p class="font-display text-2xl">12</p>
+</div>
+<div class="text-center px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+<p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Tier Status</p>
+<p class="font-display text-2xl text-primary">Gold</p>
+</div>
+</div>
+</div>
+<div class="absolute right-0 top-0 opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[120px]">eco</span>
+</div>
+</div>
+</section>
+<!-- Recent Orders -->
+<section>
+<div class="flex justify-between items-end mb-6">
+<h4 class="font-display text-2xl italic">Recent Orders</h4>
+<a class="text-sm text-primary font-medium hover:underline underline-offset-4" href="#">View All Orders</a>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 text-xs uppercase tracking-widest border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 font-semibold">Product</th>
+<th class="px-6 py-4 font-semibold">Date</th>
+<th class="px-6 py-4 font-semibold">Status</th>
+<th class="px-6 py-4 font-semibold">Total</th>
+<th class="px-6 py-4 font-semibold">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-slate-100 overflow-hidden">
+<img alt="Candle" class="w-full h-full object-cover" data-alt="Premium glass jar candle with minimalist label" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCupZN3g0ZsLHTB-EpXu3tG0h0-6WGPx3af3MctB5CiHxkX0UDgs9XT4b68V5L5QLmHzR1QKMLBxhDUEmpvsZmcxG1_9EVu1UX51b5NP_nsV4MTftWbOovYi0MkJ0sEg5JaNLQbJCwwq54wYq-EiUTlfm_hgs9zfILvn_e4k_KgLQhlbkWgchE5KrLstLx2cYjVxc1RWVazenmf_pxBCRfOd6yQEH-WDj0vn7045-A5FFoTqnMHVQz9tDAJMoammnkkhCrknIZMmw"/>
+</div>
+<div>
+<p class="font-medium text-sm">California Summers Candle</p>
+<p class="text-xs text-slate-400">Limited Edition / Large</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm">Oct 14, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Delivered</span>
+</td>
+<td class="px-6 py-4 text-sm font-medium">$65.00</td>
+<td class="px-6 py-4">
+<button class="text-primary text-sm font-semibold hover:text-primary/80">Details</button>
+</td>
+</tr>
+<tr>
+<td class="px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded bg-slate-100 overflow-hidden">
+<img alt="Fragrance" class="w-full h-full object-cover" data-alt="Elegant glass perfume bottle on marble surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXbsVlqM9FwH7sU50Mh3dpeUQCWDaTUMtG8X7EeTAYwP5OjmWYBABXhtXpCKQjlzOM0sinUr7yuJaTvP6TlG-5qKt8FSYatCUG1fr9sm58qcE3pBbgIASLc7s_zs3xMrNrwxEFVNh27jL1RxojYnkpu7uUG8DhN2TgPEItKzF3e8Pdd8uo9827Rdb08HaZtLNDXBeKQc0i2FeRkaLSgA64v2eGKSEte5MV3Pipn4OW_s7wggiql2K8lN-3UZOSNYBYbmzTCy-LfRs"/>
+</div>
+<div>
+<p class="font-medium text-sm">Night Jasmine Refill</p>
+<p class="text-xs text-slate-400">Eco-Refill / 50ml</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-sm">Sep 28, 2023</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">In Transit</span>
+</td>
+<td class="px-6 py-4 text-sm font-medium">$42.00</td>
+<td class="px-6 py-4">
+<button class="text-primary text-sm font-semibold hover:text-primary/80">Track</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- My Scent Profile & Recommendations -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="md:col-span-1 bg-slate-900 text-white p-8 rounded-xl shadow-xl border border-slate-800 flex flex-col justify-between">
+<div>
+<h4 class="font-display text-2xl mb-4 text-primary italic">My Scent DNA</h4>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-xs uppercase tracking-widest mb-2 opacity-70">
+<span>Fresh / Aquatic</span>
+<span>85%</span>
+</div>
+<div class="w-full bg-white/10 h-1.5 rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs uppercase tracking-widest mb-2 opacity-70">
+<span>Floral / Bloom</span>
+<span>40%</span>
+</div>
+<div class="w-full bg-white/10 h-1.5 rounded-full">
+<div class="bg-primary/50 h-full rounded-full" style="width: 40%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs uppercase tracking-widest mb-2 opacity-70">
+<span>Woody / Musk</span>
+<span>15%</span>
+</div>
+<div class="w-full bg-white/10 h-1.5 rounded-full">
+<div class="bg-primary/20 h-full rounded-full" style="width: 15%"></div>
+</div>
+</div>
+</div>
+</div>
+<p class="text-sm mt-8 opacity-60 italic leading-relaxed">Based on your preference for aquatic notes, we recommend exploring our "Ocean Mist" collection.</p>
+</div>
+<div class="md:col-span-2">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-display text-2xl italic">Curated for You</h4>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="group cursor-pointer">
+<div class="aspect-square rounded-xl overflow-hidden mb-3 bg-slate-100 relative">
+<img alt="Diffuser" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Luxury reed diffuser with dark wood sticks" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLmom9HrvZXx4yrznAigLZKviYzK4YzDZxlw8lGfWoIV9cGma5Uwtgimu0D9aQUtZOygNzQd_DuFsHI68r654U8wd7GMHnq4M_rKgghaLaxsSu7jGjQo3H3a_z2zDSUzBW3CRlCB9MAZYzJGGdGpgyxZIWArp4e14oanUusu_L6tQpId6CK2kicT5wDRvd5_RL2LwVDLP-Q1cT-EjF_YwnALE7isFzKAkkqTwDTPezH-MbSwWLVFAKxqwYABLYiqUFgjsWI5TUD8I"/>
+<div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg">Quick Buy</button>
+</div>
+</div>
+<p class="text-xs uppercase tracking-widest text-slate-500 mb-1">New Arrival</p>
+<h5 class="font-display text-lg">Aegean Breeze Reed Diffuser</h5>
+<p class="text-sm font-medium text-primary">$58.00</p>
+</div>
+<div class="group cursor-pointer">
+<div class="aspect-square rounded-xl overflow-hidden mb-3 bg-slate-100 relative">
+<img alt="Sample Set" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Collection of small perfume sample vials in ivory box" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKwBBXeq9i16iFCyZyZCjJDkAYVDICmmUU5GSV7DMWGK0Ndr6cYhw-b7weiQJzxdGbx4crwAo9RvF2irK_wBIsCW15BGuzA-RI-A9IYyrGW3QLeCgOvsPmfJizjcoZOZUTb3o5MHIgNVF1A5gUSk51eDsEGanvEu9_F5TDT83nE4Ox6pHRS6oXMuGBoQGwdvS5VfyPrmXuBF1BsJvjTqoPoqloJiWEPwbzPct6xYEkAoHvIdQOGy3fD7GJCT2nHvjRgjE5-paiwek"/>
+<div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+<button class="bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg">Quick Buy</button>
+</div>
+</div>
+<p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Best Value</p>
+<h5 class="font-display text-lg">Signature Discovery Set</h5>
+<p class="text-sm font-medium text-primary">$35.00</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Wishlist / Favorites -->
+<section>
+<div class="flex justify-between items-end mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+<h4 class="font-display text-3xl">Saved Favorites</h4>
+<span class="text-slate-500 text-sm">4 Items Saved</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<!-- Favorite Item 1 -->
+<div class="group">
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-slate-100">
+<img alt="Room Spray" class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" data-alt="Minimalist room spray bottle on a linen surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAvnI4ex-yeCrxGuqZ_rlamsOaxJ95_HGVRsawaixO5qmWWANv7A4WKKr4rfh7oXFOpP_MPbjYb41J1fqUs8BSGhpS8-IvBXyAy5zzAcihBaIQ8mbkNs7kpq5h2oiPYMKFexXGTbyzU5QNhxXTgAiCj9QbJJ2Bc3MS_saRjou48s8mb25fVfJpEeg7w2HIvf6wtOYDT4XZLcw76OAsiicUqqZKVfa6qiPaMGl_OiydQbPuwpNPp0Ae9n_BL2O057QNTAHp40q6-lk"/>
+<button class="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-1.5 rounded-full text-red-500 shadow-sm">
+<span class="material-symbols-outlined fill-1">favorite</span>
+</button>
+<div class="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<button class="w-full bg-primary text-white py-3 rounded-lg text-sm font-bold shadow-xl">Move to Bag</button>
+</div>
+</div>
+<h5 class="font-display text-xl mb-1">Morning Linen Spray</h5>
+<p class="text-sm text-slate-500">$32.00</p>
+</div>
+<!-- Favorite Item 2 -->
+<div class="group">
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-slate-100">
+<img alt="Bath Salts" class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" data-alt="Glass jar of luxury bath salts with floral petals" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl73nbqcH7qoX8DARcKTBgBA2ky6XKC8T5HxALEkkGYdvd_wuX8TR_tAq3XbiG41zHPYSigfiFaeAJEv6MP7MXNndL6AG0rjUiSx8JrwME-FX32xXhKtSqIK4LCBOSSdEy7u8plkEK4LSzF4vPmHFvsEbaQIc8ah5JLGhYzCPEjWKtImTG9yaXd-xyHm7g8YT_E-GNrPPFEybp7GYja-Al8fQ2fR9hj4jWQflmCC_ibAKFEdOoCA1Oe4aStakkJThhBDyS3RvIaBs"/>
+<button class="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-1.5 rounded-full text-red-500 shadow-sm">
+<span class="material-symbols-outlined fill-1">favorite</span>
+</button>
+<div class="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<button class="w-full bg-primary text-white py-3 rounded-lg text-sm font-bold shadow-xl">Move to Bag</button>
+</div>
+</div>
+<h5 class="font-display text-xl mb-1">Eucalyptus Bath Soak</h5>
+<p class="text-sm text-slate-500">$48.00</p>
+</div>
+<!-- Favorite Item 3 -->
+<div class="group">
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-slate-100">
+<img alt="Travel Spray" class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" data-alt="Small metallic travel perfume atomiser" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ1Iu7Wr7HY253LBuz96lrVnhioMpuWHdSSVTF8meqiJmGHc-2Jp268FiRKobv69upju96KRhQBhImb83OU9IO0tgVBK1627zDtjpR0BkWS1JOauFRVEic7cEpDDPKGDITVXznB1oCSq_mLdhkr6EPNQzMTMZ4KS625_4t5es85l9Tl7MVrQeItXm142tNKtRxou6dsC9YWlqXdrYP47C0DzJen2F4Wv1Dp22y0HiKLekN-56kgrvBB9YLTCgZGVRn1klJAkTutEQ"/>
+<button class="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-1.5 rounded-full text-red-500 shadow-sm">
+<span class="material-symbols-outlined fill-1">favorite</span>
+</button>
+<div class="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<button class="w-full bg-primary text-white py-3 rounded-lg text-sm font-bold shadow-xl">Move to Bag</button>
+</div>
+</div>
+<h5 class="font-display text-xl mb-1">Midnight Oud Travel Trio</h5>
+<p class="text-sm text-slate-500">$75.00</p>
+</div>
+<!-- Favorite Item 4 -->
+<div class="group">
+<div class="relative aspect-[4/5] rounded-xl overflow-hidden mb-4 bg-slate-100">
+<img alt="Body Oil" class="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700" data-alt="Glass bottle of golden shimmering body oil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgLJkcWAsEIlBOc0qgJEj_tihoNKwXoPfX_KkqxEJl7RThNrek8knlp1LdXMqvaR1YPn4sZefuCIXpYETN2aRPlxMv_HeUxPLqgARbExYrP4mtmYXTGhVJX_D-bbxwJG7X03XWaBVARF3G3Wpky_8dXDYxw1QtzjF3Yo-ml24U-afmEtbBcBeCH-G34QOKjQdNPpRNzAdUhEAXFxzUS7s-Fs5xJ62x60EVb-H2XxfwGof5igxB7Pw06LDlLnXa8j-rKXPScFRuu9M"/>
+<button class="absolute top-4 right-4 bg-white/80 backdrop-blur-md p-1.5 rounded-full text-red-500 shadow-sm">
+<span class="material-symbols-outlined fill-1">favorite</span>
+</button>
+<div class="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+<button class="w-full bg-primary text-white py-3 rounded-lg text-sm font-bold shadow-xl">Move to Bag</button>
+</div>
+</div>
+<h5 class="font-display text-xl mb-1">Glow Hydrating Body Oil</h5>
+<p class="text-sm text-slate-500">$54.00</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-900 text-white pt-20 pb-12 mt-20">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+<div class="col-span-1 md:col-span-1">
+<div class="flex items-center gap-2 mb-6">
+<span class="text-primary material-symbols-outlined text-3xl">fluid</span>
+<h2 class="font-display text-2xl font-bold tracking-tight">LUXE FRAGRANCE</h2>
+</div>
+<p class="text-slate-400 text-sm leading-relaxed mb-6">Curating sensory experiences since 2012. Our essences are sustainably sourced and artisanally crafted in France.</p>
+</div>
+<div>
+<h4 class="text-xs uppercase tracking-[0.2em] font-bold mb-6">Customer Care</h4>
+<ul class="space-y-4 text-sm text-slate-400">
+<li><a class="hover:text-primary transition-colors" href="#">Shipping &amp; Returns</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Gift Cards</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Store Locator</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact Us</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs uppercase tracking-[0.2em] font-bold mb-6">Explore</h4>
+<ul class="space-y-4 text-sm text-slate-400">
+<li><a class="hover:text-primary transition-colors" href="#">Our Story</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Ingredients Glossary</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Fragrance Finder</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Sustainability</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-xs uppercase tracking-[0.2em] font-bold mb-6">Join the Circle</h4>
+<p class="text-sm text-slate-400 mb-4">Receive exclusive invitations and early access.</p>
+<div class="flex">
+<input class="bg-white/10 border-none rounded-l-lg text-sm px-4 py-3 focus:ring-1 focus:ring-primary w-full" placeholder="Email Address" type="email"/>
+<button class="bg-primary px-4 py-3 rounded-r-lg text-slate-900 font-bold text-sm">Join</button>
+</div>
+</div>
+</div>
+<div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-slate-500">© 2023 LUXE FRAGRANCE CO. ALL RIGHTS RESERVED.</p>
+<div class="flex gap-8">
+<a class="text-slate-500 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined">public</span></a>
+<a class="text-slate-500 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined">share</span></a>
+<a class="text-slate-500 hover:text-white transition-colors" href="#"><span class="material-symbols-outlined">video_library</span></a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "payment.authorized.v1 payload",
+  "type": "object",
+  "required": ["orderId", "paymentId", "providerPaymentId", "status", "occurredAt"],
+  "properties": {
+    "orderId": { "type": "string", "minLength": 1 },
+    "paymentId": { "type": "string", "minLength": 1 },
+    "providerPaymentId": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "const": "AUTHORIZED" },
+    "reason": { "type": ["string", "null"] },
+    "occurredAt": { "type": "string" }
+  }
+}

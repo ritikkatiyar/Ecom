@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "notification.alert.v1 payload",
+  "type": "object",
+  "required": ["severity", "alertType", "eventId", "eventType", "reason", "retries", "createdAt"],
+  "properties": {
+    "severity": { "type": "string" },
+    "alertType": { "type": "string" },
+    "eventId": { "type": "string" },
+    "eventType": { "type": "string" },
+    "reason": { "type": ["string", "null"] },
+    "retries": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "string" }
+  }
+}

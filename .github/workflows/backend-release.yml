@@ -61,6 +61,7 @@ jobs:
             ecom-back/api-gateway/pom.xml \
             ecom-back/api-gateway/target/surefire-reports/com.ecom.gateway.filter.JwtAuthFilterTest.txt
           python ecom-back/scripts/check_search_dataset_freshness.py
+          python ecom-back/scripts/check_event_contracts.py
           python ecom-back/scripts/check_api_docs.py
 
   package:

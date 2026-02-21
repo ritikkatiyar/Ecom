@@ -148,6 +148,9 @@ app:
       window-seconds: 60
     auth:
       validate-url: http://localhost:8081/api/auth/validate
+  frontend-flags:
+    beta-banner-enabled: true
+    admin-console-enabled: false
 
 management:
   endpoints:

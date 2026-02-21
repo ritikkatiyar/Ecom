@@ -32,4 +32,5 @@ public class Product {
     private boolean active = true;
     private List<String> colors;
     private List<String> sizes;
+    private List<String> imageUrls;
 }

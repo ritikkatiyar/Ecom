@@ -83,6 +83,7 @@ public class ProductService implements ProductUseCases {
         p.setColors(request.colors());
         p.setSizes(request.sizes());
         p.setActive(request.active() == null ? true : request.active());
+        p.setImageUrls(request.imageUrls());
         return p;
     }
 }

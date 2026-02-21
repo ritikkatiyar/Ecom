@@ -2,15 +2,18 @@
 
 Base path: `/api/products`
 
+Last updated: 2026-02-21
+
 ## Endpoints
 - `POST /` - create product.
 - `PUT /{id}` - update product.
 - `GET /{id}` - fetch product by id.
 - `DELETE /{id}` - delete product.
 - `GET /` - list/search products with pagination/filter/sort.
+- `POST /images` - upload product images (multipart `files`) to Cloudinary; returns `string[]` URLs. Requires `CLOUDINARY_*` env vars.
 
 ## Entities
-- `Product` (MongoDB document)
+- `Product` (MongoDB document): id, name, description, category, brand, price, active, colors, sizes, imageUrls.
 
 ## Data Stores
 - MongoDB: canonical product catalog store.

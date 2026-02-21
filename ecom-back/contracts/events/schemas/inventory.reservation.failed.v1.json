@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "inventory.reservation.failed.v1 payload",
+  "type": "object",
+  "required": ["orderId", "emittedAt"],
+  "properties": {
+    "orderId": { "type": "string", "minLength": 1 },
+    "reason": { "type": "string" },
+    "emittedAt": { "type": "string" }
+  }
+}
