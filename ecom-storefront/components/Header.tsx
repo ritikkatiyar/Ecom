@@ -15,7 +15,7 @@ export function Header() {
             href="/"
             className="font-display text-2xl font-bold tracking-tight text-slate-900"
           >
-            VOLUSPA
+            ANAYA CANDLES
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium uppercase tracking-widest text-slate-600">
             <Link href="/shop" className="hover:text-[#2badee] transition-colors">

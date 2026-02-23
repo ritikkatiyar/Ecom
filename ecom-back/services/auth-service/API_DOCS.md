@@ -15,7 +15,7 @@ Base path: `/api/auth`
 
 ## Data Stores
 - MySQL: users + refresh tokens.
-- Redis: access-token blacklist.
+- Redis: access-token blacklist. Uses generic fallback (common-redis): when Redis unavailable, blacklist check assumes "not blacklisted", validation proceeds.
 - Kafka: configured, no producer/consumer flow yet in auth APIs.
 
 ## Flow

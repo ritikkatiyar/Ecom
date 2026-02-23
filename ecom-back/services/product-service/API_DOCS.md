@@ -10,7 +10,7 @@ Last updated: 2026-02-21
 - `GET /{id}` - fetch product by id.
 - `DELETE /{id}` - delete product.
 - `GET /` - list/search products with pagination/filter/sort.
-- `POST /images` - upload product images (multipart `files`) to Cloudinary; returns `string[]` URLs. Requires `CLOUDINARY_*` env vars.
+- `POST /images` - upload product images (multipart `files`) to Cloudinary; returns `string[]` URLs. Requires `CLOUDINARY_*` env vars. Max 10MB per file, 10MB per request (configurable via `spring.servlet.multipart`).
 
 ## Entities
 - `Product` (MongoDB document): id, name, description, category, brand, price, active, colors, sizes, imageUrls.
@@ -25,3 +25,7 @@ Last updated: 2026-02-21
 2. Request is validated and mapped to/from `Product`.
 3. Reads/writes go to MongoDB.
 4. Search indexing sync currently runs via search service reindex endpoints.
+
+## Observability
+- `ApiExceptionLoggingAdvice`: logs 400 multipart (e.g. max size exceeded) and missing-param errors.
+- `ImageUploadController`: logs `fileCount` on invoke, `urlCount` on success.

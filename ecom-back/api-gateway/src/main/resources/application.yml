@@ -3,8 +3,11 @@ spring:
     name: api-gateway
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # Short timeouts: fail fast on Redis unavailability so rate limit filter falls back to in-memory
+      timeout: 2s
+      connect-timeout: 2s
   cloud:
     gateway:
       routes:
@@ -17,15 +20,8 @@ spring:
               args:
                 name: authCircuit
                 fallbackUri: forward:/fallback/auth
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 6
-                redis-rate-limiter.burstCapacity: 12
-                redis-rate-limiter.requestedTokens: 1
           metadata:
-            response-timeout: 3000
+            response-timeout: 15000
         - id: product
           uri: http://localhost:8083
           predicates:
@@ -35,15 +31,8 @@ spring:
               args:
                 name: productCircuit
                 fallbackUri: forward:/fallback/product
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 40
-                redis-rate-limiter.burstCapacity: 80
-                redis-rate-limiter.requestedTokens: 1
           metadata:
-            response-timeout: 5000
+            response-timeout: 15000
         - id: inventory
           uri: http://localhost:8084
           predicates:
@@ -53,13 +42,6 @@ spring:
               args:
                 name: inventoryCircuit
                 fallbackUri: forward:/fallback/inventory
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 25
-                redis-rate-limiter.burstCapacity: 50
-                redis-rate-limiter.requestedTokens: 1
           metadata:
             response-timeout: 4000
         - id: cart
@@ -71,13 +53,6 @@ spring:
               args:
                 name: cartCircuit
                 fallbackUri: forward:/fallback/cart
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 30
-                redis-rate-limiter.burstCapacity: 60
-                redis-rate-limiter.requestedTokens: 1
           metadata:
             response-timeout: 4000
         - id: order
@@ -89,13 +64,6 @@ spring:
               args:
                 name: orderCircuit
                 fallbackUri: forward:/fallback/order
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 15
-                redis-rate-limiter.burstCapacity: 30
-                redis-rate-limiter.requestedTokens: 1
           metadata:
             response-timeout: 5000
         - id: payment
@@ -107,13 +75,6 @@ spring:
               args:
                 name: paymentCircuit
                 fallbackUri: forward:/fallback/payment
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 10
-                redis-rate-limiter.burstCapacity: 20
-                redis-rate-limiter.requestedTokens: 1
           metadata:
             response-timeout: 5000
         - id: search
@@ -125,13 +86,6 @@ spring:
               args:
                 name: searchCircuit
                 fallbackUri: forward:/fallback/search
-            - name: RequestRateLimiter
-              args:
-                key-resolver: "#{@ipKeyResolver}"
-                deny-empty-key: true
-                redis-rate-limiter.replenishRate: 35
-                redis-rate-limiter.burstCapacity: 70
-                redis-rate-limiter.requestedTokens: 1
           metadata:
             response-timeout: 3000
 
@@ -143,11 +97,14 @@ app:
     api-version:
       required: v1
     rate-limit:
+      # redis: try Redis first, fallback to in-memory if Redis unavailable
+      # in-memory: use in-memory only (no Redis)
       mode: redis
       max-requests: 120
       window-seconds: 60
     auth:
       validate-url: http://localhost:8081/api/auth/validate
+      validate-timeout-seconds: 15
   frontend-flags:
     beta-banner-enabled: true
     admin-console-enabled: false
@@ -197,9 +154,12 @@ resilience4j:
       default:
         timeoutDuration: 3s
         cancelRunningFuture: true
+      authExtended:
+        timeoutDuration: 15s
+        cancelRunningFuture: true
     instances:
       authCircuit:
-        baseConfig: default
+        baseConfig: authExtended
       productCircuit:
         baseConfig: default
       inventoryCircuit:

@@ -1,7 +1,8 @@
 /**
  * Product API - list, get, create, update, image upload.
  */
-import { apiClient, getAccessToken } from "../apiClient";
+import { apiClient, fetchWithAuthRetry, getAccessToken } from "../apiClient";
+import { generateCorrelationId } from "../utils/uuid";
 import type { Product, ProductPage, ProductRequest } from "../types/product";
 
 export interface GetProductsParams {
@@ -59,10 +60,11 @@ export async function uploadProductImages(files: File[]): Promise<string[]> {
   const url = `${BASE_URL}/api/products/images`;
   const headers: Record<string, string> = {
     "X-API-Version": "v1",
+    "X-Correlation-Id": generateCorrelationId(),
   };
   const token = getAccessToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(url, {
+  const res = await fetchWithAuthRetry(url, {
     method: "POST",
     headers,
     body: formData,

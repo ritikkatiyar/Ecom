@@ -16,8 +16,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Voluspa | Luxury Fragrance & Home",
-  description: "Premium candles and fragrances for your space",
+  title: "Anaya Candles",
+  description: "Handcrafted candles for your space",
 };
 
 export default function RootLayout({

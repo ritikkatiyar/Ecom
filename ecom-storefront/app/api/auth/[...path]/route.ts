@@ -6,6 +6,18 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
+// Handle CORS preflight (OPTIONS) - custom headers trigger preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Version, X-Correlation-Id",
+    },
+  });
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }

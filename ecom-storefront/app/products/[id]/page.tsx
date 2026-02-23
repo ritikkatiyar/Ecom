@@ -45,7 +45,7 @@ export default async function ProductPage({
               Product {id}
             </h1>
             <p className="text-[#2badee] font-medium tracking-widest text-sm uppercase mb-6">
-              Fragrance Family
+              Scent
             </p>
             <div className="text-3xl font-light text-slate-800 mb-8">₹3,441.46</div>
             <div className="space-y-4">

@@ -19,7 +19,9 @@ Generated on: 2026-02-21
 - Shared modules added:
   - `common/common-core`
   - `common/common-events`
+  - `common/common-redis`
   - `common/common-security`
+  - `common/common-web`
 - Docker infra in `ecom-back/infrastructure/docker-compose.yml` with:
   - MySQL, MongoDB, Redis
   - Kafka + Zookeeper
@@ -30,12 +32,12 @@ Generated on: 2026-02-21
 ### Implemented Backend Services (Baseline Functional)
 - `auth-service`
   - signup/login/refresh/logout/validate
-  - JWT + refresh token + Redis blacklist
+  - JWT + refresh token + Redis blacklist (with `common-redis` fallback when Redis unavailable)
   - OAuth2 Google login handler
   - SOLID/DIP boundary via `AuthUseCases` + SRP split (`AuthTokenIssuer`, `RefreshTokenGenerator`)
 - `product-service`
   - CRUD + pagination/filter/sort on MongoDB
-  - Cloudinary image upload (`POST /api/products/images`), Product `imageUrls`, admin ProductForm image picker
+  - Cloudinary image upload (`POST /api/products/images`, max 10MB), Product `imageUrls`, admin ProductForm image picker with 401 retry
 - `inventory-service`
   - stock upsert/get + reserve/release/confirm
   - MySQL persistence + Redis lock
@@ -113,10 +115,11 @@ Generated on: 2026-02-21
   - auth-service follows DIP/SRP via `AuthUseCases`, `AuthTokenIssuer`, and `RefreshTokenGenerator`
   - gateway JWT guard follows SRP via `GatewayAuthRoutePolicy` and `AuthValidationClient`
 - Gateway hardening baseline applied:
+  - request logging on every API call (method, path, status, duration, correlation-id, client IP)
   - JWT validation via auth-service
   - correlation ID propagation
   - API version header enforcement
-  - Redis-backed distributed rate limiting
+  - Redis-backed rate limiting with in-memory fallback when Redis unavailable
   - standardized JSON error payloads at gateway filters
   - route policy tuning (public GET browse/search, protected write flows)
   - route-level rate limit and timeout policies per domain

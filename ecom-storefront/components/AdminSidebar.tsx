@@ -19,7 +19,7 @@ export function AdminSidebar() {
           <span className="material-symbols-outlined text-lg">auto_awesome</span>
         </div>
         <h1 className="font-display text-xl font-bold tracking-tight text-slate-900">
-          Essence Admin
+          Anaya Candles Admin
         </h1>
       </div>
       <nav className="flex-1 px-4 space-y-1">

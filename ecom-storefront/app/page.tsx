@@ -6,11 +6,11 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-6 py-16">
         <section className="text-center py-24">
           <h1 className="font-display text-5xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-            Luxury Fragrance & Home
+            Anaya Candles
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-10">
-            Premium candles and fragrances crafted for your space. Discover our
-            California Summers collection and more.
+            Handcrafted candles for your space. Discover our collections and
+            bring warmth to your home.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

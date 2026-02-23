@@ -3,6 +3,8 @@ package com.ecom.product.controller;
 import java.io.IOException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,8 @@ import com.ecom.product.service.ImageUploadService;
 @ConditionalOnBean(com.ecom.product.service.ImageUploadService.class)
 public class ImageUploadController {
 
+    private static final Logger log = LoggerFactory.getLogger(ImageUploadController.class);
+
     private final ImageUploadService imageUploadService;
 
     public ImageUploadController(ImageUploadService imageUploadService) {
@@ -28,7 +32,9 @@ public class ImageUploadController {
 
     @PostMapping("/images")
     public ResponseEntity<List<String>> uploadImages(@RequestParam("files") MultipartFile[] files) {
+        log.info("uploadImages invoked fileCount={}", files != null ? files.length : 0);
         List<String> urls = imageUploadService.uploadMultiple(files);
+        log.info("uploadImages completed urlCount={}", urls != null ? urls.size() : 0);
         return ResponseEntity.ok(urls);
     }
 

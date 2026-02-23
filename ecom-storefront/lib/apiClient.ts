@@ -61,6 +61,23 @@ export function setOn401Handler(handler: On401Handler | null): void {
   on401Handler = handler;
 }
 
+/**
+ * Fetch with 401 retry: on 401, attempts token refresh and retries once.
+ * Use for custom requests (e.g. multipart upload) that can't use apiClient.
+ */
+export async function fetchWithAuthRetry(
+  url: string,
+  init: RequestInit
+): Promise<Response> {
+  const res = await fetch(url, init);
+  if (res.status !== 401 || !on401Handler) return res;
+  const newToken = await on401Handler();
+  if (!newToken) return res;
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${newToken}`);
+  return fetch(url, { ...init, headers });
+}
+
 function getHeaders(skipAuth = false): Record<string, string> {
   const correlationId = generateCorrelationId();
   const headers = { ...DEFAULT_HEADERS, "X-Correlation-Id": correlationId };

@@ -53,13 +53,18 @@ Last updated: 2026-02-21
 - 2026-02-21: Phase 1 core infrastructure: apiClient (X-API-Version, X-Correlation-Id, Auth header, 401 refresh retry, GET retry), AuthContext (JWT decode, roles, login/signup/logout, sessionStorage), AccountGuard/AdminGuard, React Query provider, login/signup/unauthorized pages, route groups (account), (admin).
 - 2026-02-21: Admin console: AdminSidebar (stitch design), admin dashboard, Products CRUD (list/create/edit), ProductForm, product API proxy (route handlers), login redirects admins to /admin/dashboard. No separate admin login.
 - 2026-02-21: Product service: Cloudinary image upload integration (`POST /api/products/images`), Product `imageUrls` field, conditional Cloudinary beans when `cloudinary.cloud-name` set. Admin ProductForm image picker (upload to Cloudinary, preview, remove). `lib/api/products.ts` and `/api/products/images` proxy.
+- 2026-02-21: Added generic Redis fallback (`common-redis`): `RedisFallbackOperations` for graceful degradation when Redis unavailable. Auth-service token blacklist uses fallback (assume not blacklisted on Redis error).
+- 2026-02-21: Added request logging in every API: gateway `RequestLoggingFilter` (method, path, status, duration, correlation-id, client IP); `common-web` with shared filter for backend services (auth, cart, product, inventory, order, payment, user, review, search, notification).
+- 2026-02-21: Gateway: FallbackController supports all HTTP methods (GET, POST, etc.); auth-circuit timeout 15s; AuthValidationClient configurable validate-timeout (15s); JwtAuthFilter logs 401 AUTH_TOKEN_MISSING/INVALID and 503 AUTH_VALIDATION_UNAVAILABLE.
+- 2026-02-21: Product service: multipart max 10MB per file/request; `ApiExceptionLoggingAdvice` logs 400 multipart and missing-param; ImageUploadController logs fileCount/urlCount.
+- 2026-02-21: Frontend: `uploadProductImages` uses `fetchWithAuthRetry` for 401 retry with token refresh; adds X-Correlation-Id to upload requests.
 
 ## Frontend / Storefront (`ecom-storefront`)
 - Stack:
   - Next.js 15 (App Router), TypeScript, Tailwind CSS v4
   - Newsreader + Inter fonts, Material Symbols icons
   - @tanstack/react-query (staleTime, retry policy)
-  - apiClient: X-API-Version, X-Correlation-Id, Bearer token, 401 refresh retry, GET retry
+  - apiClient: X-API-Version, X-Correlation-Id, Bearer token, 401 refresh retry, GET retry; fetchWithAuthRetry for image upload (401 retry + X-Correlation-Id)
   - AuthContext: JWT decode, roles (USER, ADMIN), login/signup/logout
   - Route guards: AccountGuard (/account), AdminGuard (/admin)
 - Routes:
@@ -103,9 +108,10 @@ Last updated: 2026-02-21
   - None.
 - Patterns:
   - API gateway route aggregation.
+  - Request logging on every API call (method, path, status, duration, correlation-id, client IP).
   - Global correlation ID propagation (`X-Correlation-Id`).
   - API version guard (`X-API-Version: v1` for non-auth `/api/**` calls).
-  - Distributed Redis-backed per-IP route-level rate limiting (`RequestRateLimiter` + `ipKeyResolver`).
+  - Per-IP rate limiting with Redis + in-memory fallback (`RateLimitWithFallbackFilter`).
   - JWT validation filter via auth-service `/api/auth/validate`.
   - Standardized JSON error payloads across auth/version/rate-limit filters.
   - Route policy tuning: read-only product/search APIs are public, write paths remain protected.
@@ -141,6 +147,10 @@ Last updated: 2026-02-21
 - Pending:
   - Replace placeholder webhook receivers with production integrations (Slack/PagerDuty/email) and validate calibrated rollback callback thresholds against live drill noise.
 
+## Shared Modules (`ecom-back/common`)
+- **common-redis**: Generic Redis fallback for graceful degradation. `RedisFallbackOperations` catches Redis errors and returns safe defaults. Used by auth-service token blacklist.
+- **common-web**: Shared request logging for Spring MVC services. `RequestLoggingFilter` logs method, path, status, duration, correlation-id, client IP. Auto-configured for all backend services via `common-web` dependency.
+
 ## Shared Reliability (`ecom-back/common/common-core`)
 - Shared components added:
   - `ConsumerDedupSupport` (generic event dedup helper).
@@ -165,7 +175,7 @@ Last updated: 2026-02-21
   - None.
 - Data model:
   - `UserAccount`, `RefreshToken` (MySQL).
-  - Access-token blacklist (Redis).
+  - Access-token blacklist (Redis with `common-redis` fallback when Redis unavailable).
 - Patterns:
   - JWT + refresh token.
   - DIP via `AuthUseCases` (`AuthController` and OAuth2 success handler depend on interface).

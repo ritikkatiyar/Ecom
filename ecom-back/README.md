@@ -6,7 +6,9 @@ This repository contains the Phase 2 backend microservices scaffold for Amazon L
 - `api-gateway`
 - `common/common-core`
 - `common/common-events`
+- `common/common-redis`
 - `common/common-security`
+- `common/common-web`
 - `services/auth-service`
 - `services/user-service`
 - `services/product-service`

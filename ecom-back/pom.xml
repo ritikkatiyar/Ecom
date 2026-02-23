@@ -10,6 +10,8 @@
 
   <modules>
     <module>common/common-core</module>
+    <module>common/common-redis</module>
+    <module>common/common-web</module>
     <module>common/common-events</module>
     <module>common/common-security</module>
     <module>services/auth-service</module>

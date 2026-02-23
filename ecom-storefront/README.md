@@ -28,6 +28,8 @@ By default, `/api/*` requests are proxied to `http://localhost:8080` (API Gatewa
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 ```
 
+- Auth: Bearer token, 401 refresh retry (apiClient and fetchWithAuthRetry for image upload).
+
 ## Routes
 
 - `/` – Home
