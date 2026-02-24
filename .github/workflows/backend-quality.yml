@@ -28,6 +28,7 @@ jobs:
           mvn -f ecom-back/common/common-core/pom.xml -DskipTests install
           mvn -f ecom-back/common/common-events/pom.xml -DskipTests install
           mvn -f ecom-back/common/common-security/pom.xml -DskipTests install
+          mvn -f ecom-back/common/common-web/pom.xml -DskipTests install
 
       - name: Run critical service tests
         run: |
