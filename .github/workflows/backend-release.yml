@@ -132,7 +132,9 @@ jobs:
           fi
 
       - name: Check staging URLs
-        if: ${{ env.SKIP_DEPLOY != 'true' }}
+        # only perform this verification when the workflow is started manually; regular
+        # push-triggered runs should never break on missing URLs.
+        if: ${{ github.event_name == 'workflow_dispatch' && env.SKIP_DEPLOY != 'false' }}
         run: |
           test -n "$STAGING_BROWSE_BASE_URL" || (echo "Missing STAGING_BROWSE_BASE_URL" && exit 1)
           test -n "$STAGING_CART_BASE_URL" || (echo "Missing STAGING_CART_BASE_URL" && exit 1)
@@ -141,7 +143,8 @@ jobs:
 
       - name: Trigger staging deployment
         id: deploy_staging_trigger
-        if: ${{ env.SKIP_DEPLOY != 'true' }}
+        # keep the deploy trigger aligned with the URL check; only fire when manually dispatched
+        if: ${{ github.event_name == 'workflow_dispatch' && env.SKIP_DEPLOY != 'false' }}
         env:
           STAGING_DEPLOY_WEBHOOK: ${{ secrets.STAGING_DEPLOY_WEBHOOK }}
         run: |
