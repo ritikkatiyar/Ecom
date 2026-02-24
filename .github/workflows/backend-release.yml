@@ -102,6 +102,8 @@ jobs:
     needs: [ package ]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     environment: staging
+    env:
+      SKIP_DEPLOY: ${{ vars.SKIP_DEPLOY || 'false' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -126,8 +128,17 @@ jobs:
             exit 1
           fi
 
+      - name: Check staging URLs
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
+        run: |
+          test -n "$STAGING_BROWSE_BASE_URL" || (echo "Missing STAGING_BROWSE_BASE_URL" && exit 1)
+          test -n "$STAGING_CART_BASE_URL" || (echo "Missing STAGING_CART_BASE_URL" && exit 1)
+          test -n "$STAGING_ORDER_BASE_URL" || (echo "Missing STAGING_ORDER_BASE_URL" && exit 1)
+          test -n "$STAGING_PAYMENT_BASE_URL" || (echo "Missing STAGING_PAYMENT_BASE_URL" && exit 1)
+
       - name: Trigger staging deployment
         id: deploy_staging_trigger
+        if: ${{ env.SKIP_DEPLOY != 'true' }}
         env:
           STAGING_DEPLOY_WEBHOOK: ${{ secrets.STAGING_DEPLOY_WEBHOOK }}
         run: |
