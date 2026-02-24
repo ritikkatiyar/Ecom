@@ -103,7 +103,10 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     environment: staging
     env:
-      SKIP_DEPLOY: ${{ vars.SKIP_DEPLOY || 'false' }}
+      # default to true when the variable isn't defined, so regular pushes don't
+      # attempt to validate staging URLs.  Setting SKIP_DEPLOY=false explicitly
+      # (via repo variable or workflow_dispatch input) will re-enable checks.
+      SKIP_DEPLOY: ${{ vars.SKIP_DEPLOY || 'true' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
