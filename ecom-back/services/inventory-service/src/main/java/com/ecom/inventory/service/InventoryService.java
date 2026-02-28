@@ -14,6 +14,7 @@ import com.ecom.inventory.dto.StockResponse;
 import com.ecom.inventory.dto.StockUpsertRequest;
 import com.ecom.inventory.entity.InventoryReservation;
 import com.ecom.inventory.entity.InventoryStock;
+import com.ecom.inventory.exception.InventoryNotFoundException;
 import com.ecom.inventory.repository.InventoryReservationRepository;
 import com.ecom.inventory.repository.InventoryStockRepository;
 
@@ -48,7 +49,7 @@ public class InventoryService implements InventoryUseCases {
     @Transactional(readOnly = true)
     public StockResponse getStock(String sku) {
         InventoryStock stock = stockRepository.findBySku(sku)
-                .orElseThrow(() -> new IllegalArgumentException("SKU not found"));
+                .orElseThrow(() -> new InventoryNotFoundException("Inventory stock not found for SKU: " + sku));
         return toResponse(stock);
     }
 

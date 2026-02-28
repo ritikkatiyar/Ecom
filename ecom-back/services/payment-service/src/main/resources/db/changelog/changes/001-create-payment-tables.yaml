@@ -1,0 +1,277 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-payments
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: payments
+      changes:
+        - createTable:
+            tableName: payments
+            columns:
+              - column:
+                  name: id
+                  type: varchar(50)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: order_id
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: idempotency_key
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: provider_payment_id
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: provider_event_id
+                  type: varchar(120)
+              - column:
+                  name: failure_reason
+                  type: varchar(255)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_payments_order_id
+            tableName: payments
+            columns:
+              - column:
+                  name: order_id
+
+  - changeSet:
+      id: 002-create-payment-webhook-event
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: payment_webhook_event
+      changes:
+        - createTable:
+            tableName: payment_webhook_event
+            columns:
+              - column:
+                  name: provider_event_id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-payment-provider-dead-letters
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: payment_provider_dead_letters
+      changes:
+        - createTable:
+            tableName: payment_provider_dead_letters
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: idempotency_key
+                  type: varchar(80)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: order_id
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: amount
+                  type: decimal(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: failure_reason
+                  type: varchar(255)
+              - column:
+                  name: requeued_payment_id
+                  type: varchar(80)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolved_at
+                  type: datetime(6)
+        - createIndex:
+            indexName: idx_payment_dead_letters_created
+            tableName: payment_provider_dead_letters
+            columns:
+              - column:
+                  name: created_at
+
+  - changeSet:
+      id: 004-create-payment-consumed-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: payment_consumed_events
+      changes:
+        - createTable:
+            tableName: payment_consumed_events
+            columns:
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: consumed_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 005-create-payment-outbox-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: payment_outbox_events
+      changes:
+        - createTable:
+            tableName: payment_outbox_events
+            columns:
+              - column:
+                  name: id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: topic
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message_key
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: varchar(20000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_payment_outbox_status
+            tableName: payment_outbox_events
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at

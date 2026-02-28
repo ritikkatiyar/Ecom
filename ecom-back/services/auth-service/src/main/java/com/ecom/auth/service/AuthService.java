@@ -2,6 +2,8 @@ package com.ecom.auth.service;
 
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import io.jsonwebtoken.Claims;
 
 @Service
 public class AuthService implements AuthUseCases {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserAccountRepository userRepo;
     private final RefreshTokenRepository refreshRepo;
@@ -77,13 +81,19 @@ public class AuthService implements AuthUseCases {
     @Override
     @Transactional
     public TokenResponse login(LoginRequest request) {
+        log.info("Login attempt received for email={}", request.email());
         UserAccount user = userRepo.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: user not found for email={}", request.email());
+                    return new IllegalArgumentException("User not found");
+                });
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            log.warn("Login failed: invalid password for email={}", request.email());
             throw new IllegalArgumentException("Invalid credentials");
         }
 
+        log.info("Login success for email={} userId={}", user.getEmail(), user.getId());
         return authTokenIssuer.issueTokens(user);
     }
 

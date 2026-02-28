@@ -40,7 +40,15 @@ Last updated: 2026-02-21
 | Observability in App Code | 95% | In Progress | Added request logging in every API (gateway `RequestLoggingFilter`, backend services via `common-web`), Prometheus registry and Zipkin tracing baseline across gateway/auth/product/cart/inventory/order/payment/search/notification with trace-log correlation pattern, Alertmanager routing includes payment retry/DLQ alerts, Grafana has release-gate rollback callback telemetry dashboard panels, gateway exposes internal rollback callback metric emitter endpoint, calibrated release-gate rules are in place, weekly ops receiver drill cadence is wired, receiver config validation blocks placeholder/malformed production settings, and scheduled staged/prod release-gate drill workflow now auto-generates delta reports. | Validate calibrated thresholds against staged/prod drill results and tune noisy alerts. |
 | CI/CD | 94% | In Progress | Added GitHub Actions backend quality workflow and staged release pipeline (`quality -> package -> staging -> production`) with promotion gates, smoke/rollback checks, rollback verification callbacks, release-gate summary artifacts, staging load regression, production read-heavy load regression profile, event contract validation gate, and release-gate drill evidence enforcement (`check_release_gate_drill_evidence.py`). | Wire real staging/prod callback endpoints and complete non-missing drill evidence cycle. |
 | Load Testing | 90% | In Progress | Added k6 flash-sale inventory scenario plus baseline browse/cart/checkout suites with explicit thresholds, local runners, CI-triggered staging regression gate, production-aware read-heavy regression profile, weekly calibration workflow, Prometheus auto-ingestion for observed budgets, and applied approved production p95 threshold deltas in release workflow. | Enforce periodic threshold review signoff and keep calibration evidence attached to budget changes. |
-| Frontend Beta Track | 55% | In Progress | Next.js storefront (`ecom-storefront`) scaffolded with stitch design (Voluspa style), App Router, home/shop/products/search/cart/account/collections routes, Header nav, API proxy to gateway (`NEXT_PUBLIC_BACKEND_URL`). Legacy `ecom-frontend` (Vite) deprecated. | Wire backend APIs (products, search, cart, auth), add feature flags, and ship public beta. |
+| Frontend Beta Track | 82% | In Progress | Next.js storefront (`ecom-storefront`) is active with stitch design (Voluspa style), cookie-backed auth refresh flow, live public routes (`/`, `/shop`, `/products/[id]`, `/search`, `/collections`, `/cart`, `/checkout`), live account routes (`/account/*`), and live admin routes (`/admin/dashboard`, `/admin/products`, `/admin/inventory`, `/admin/orders`, `/admin/reviews`, `/admin/payments`, `/admin/system`) mapped to backend APIs. `ecom-frontend` (Vite) removed from active development. | Close remaining Phase E polish (image upload reliability/UX), then execute Phase F hardening + staging smoke gate for beta release. |
+
+## Schema Migration Status
+- Liquibase adopted for:
+  - `order-service`
+  - `inventory-service`
+  - `payment-service`
+- These services now run with `spring.jpa.hibernate.ddl-auto: validate` and use `db/changelog/db.changelog-master.yaml` as the schema source of truth.
+- Remaining MySQL services (`auth-service`, `cart-service`, `user-service`, `review-service`, `notification-service`) are pending Liquibase rollout.
 
 ## Immediate Execution Order
 1. Search dataset freshness ownership rota + review cadence.
@@ -48,5 +56,3 @@ Last updated: 2026-02-21
 3. Execute staged/prod rollback drills and capture threshold tuning deltas in runbook from generated artifacts (delta-log automation wired; awaiting non-missing staged/prod drill results).
 4. Wire ecom-storefront to backend APIs (products/search/cart/auth) and complete browse/search/cart flows.
 5. Shift focus from SRP cleanup to remaining hardening items (staged/prod drill evidence + production receiver validation).
-
-

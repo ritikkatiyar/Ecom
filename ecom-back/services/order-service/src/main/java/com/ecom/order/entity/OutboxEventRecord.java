@@ -23,7 +23,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Entity
 @Table(name = "order_outbox_events", indexes = {
-        @Index(name = "idx_order_outbox_status", columnList = "status,createdAt")
+        @Index(name = "idx_order_outbox_status", columnList = "status,created_at")
 })
 public class OutboxEventRecord implements RetryableOutboxRecord {
 
@@ -54,11 +54,11 @@ public class OutboxEventRecord implements RetryableOutboxRecord {
     private String lastError;
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @Override

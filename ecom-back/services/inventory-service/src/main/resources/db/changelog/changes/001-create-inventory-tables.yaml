@@ -1,0 +1,192 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-inventory-stock
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: inventory_stock
+      changes:
+        - createTable:
+            tableName: inventory_stock
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: sku
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: available_quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reserved_quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002-create-inventory-reservation
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: inventory_reservation
+      changes:
+        - createTable:
+            tableName: inventory_reservation
+            columns:
+              - column:
+                  name: reservation_id
+                  type: varchar(100)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: sku
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_inventory_reservation_status_expires
+            tableName: inventory_reservation
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: expires_at
+
+  - changeSet:
+      id: 003-create-inventory-consumed-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: inventory_consumed_events
+      changes:
+        - createTable:
+            tableName: inventory_consumed_events
+            columns:
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: consumed_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 004-create-inventory-outbox-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: inventory_outbox_events
+      changes:
+        - createTable:
+            tableName: inventory_outbox_events
+            columns:
+              - column:
+                  name: id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: topic
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message_key
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_inventory_outbox_status
+            tableName: inventory_outbox_events
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at

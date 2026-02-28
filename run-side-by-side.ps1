@@ -34,7 +34,7 @@ function Resolve-MavenCommand {
 
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendDir = Join-Path $repoRoot "ecom-back"
-$frontendDir = Join-Path $repoRoot "ecom-frontend"
+$frontendDir = Join-Path $repoRoot "ecom-storefront"
 
 if ($StartInfra) {
   Write-Host "Starting infrastructure..."
@@ -72,7 +72,7 @@ if ($StartFrontend) {
     Write-Host "Installing frontend dependencies..."
     npm --prefix "$frontendDir" install
   }
-  Start-TerminalCommand "ecom-frontend" $frontendDir "npm run dev"
+  Start-TerminalCommand "ecom-storefront" $frontendDir "npm run dev"
 }
 
 Write-Host "Side-by-side dev startup triggered."

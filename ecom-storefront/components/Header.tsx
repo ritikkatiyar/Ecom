@@ -1,11 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useCart } from "@/lib/hooks/useCart";
 
 export function Header() {
-  const { isAuthenticated, roles } = useAuth();
+  const router = useRouter();
+  const { isAuthenticated, roles, logout } = useAuth();
+  const { cart } = useCart();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isAdmin = roles.includes("ADMIN");
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#F8F6F3]/80 backdrop-blur-md border-b border-black/5">
@@ -42,12 +60,22 @@ export function Header() {
             search
           </Link>
           {isAuthenticated ? (
-            <Link
-              href="/account"
-              className="material-symbols-outlined text-slate-700 hover:text-[#2badee] transition-colors"
-            >
-              person
-            </Link>
+            <>
+              <Link
+                href="/account"
+                className="material-symbols-outlined text-slate-700 hover:text-[#2badee] transition-colors"
+              >
+                person
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-xs font-semibold uppercase tracking-widest text-slate-600 hover:text-[#2badee] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
+            </>
           ) : (
             <Link
               href="/login"
@@ -62,7 +90,7 @@ export function Header() {
           >
             shopping_bag
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#2badee] text-[10px] text-white">
-              0
+              {cart?.totalItems ?? 0}
             </span>
           </Link>
         </div>

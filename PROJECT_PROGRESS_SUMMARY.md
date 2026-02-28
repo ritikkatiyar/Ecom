@@ -5,7 +5,8 @@ Generated on: 2026-02-21
 ## Overall Snapshot
 - Backend (Phase 2 target scope): `~99% complete`
 - Full backend production maturity target: `~40% complete`
-- Frontend (beta release track): `~55% complete`
+- Frontend (beta release track): `~82% complete`
+- Storefront execution schedule: `STOREFRONT_EXECUTION_SCHEDULE.md` (strict phase order locked)
 
 ## Completed So Far
 
@@ -105,6 +106,14 @@ Generated on: 2026-02-21
   - `app.cleanup.outbox-failed-retention`
   - `app.cleanup.dedup-retention`
 
+### Schema Governance (Liquibase Rollout)
+- Added Liquibase-based schema migrations for critical MySQL services:
+  - `order-service`
+  - `inventory-service`
+  - `payment-service`
+- Added versioned changelog files under `src/main/resources/db/changelog/**` for each service.
+- Switched the three services from JPA auto-DDL to `ddl-auto: validate` so schema drift fails fast and migrations are the source of truth.
+
 ### Engineering Standards Applied
 - OpenAPI support wired in active services.
 - Lombok integrated in core model/entity classes.
@@ -145,12 +154,16 @@ Generated on: 2026-02-21
   - validator script: `ecom-back/scripts/check_event_contracts.py`
   - enforced in both `backend-quality.yml` and `backend-release.yml`
 - Next.js storefront (`ecom-storefront`) scaffolded:
-  - App Router with routes: `/`, `/shop`, `/products/[id]`, `/search`, `/cart`, `/account`, `/collections`
+  - App Router with routes: `/`, `/shop`, `/products/[id]`, `/search`, `/cart`, `/checkout`, `/collections`, `/account/*`, `/admin/*`
   - stitch design system (Voluspa style): primary `#2badee`, background `#F8F6F3`, fonts Newsreader/Inter, Material Symbols
   - API proxy via `NEXT_PUBLIC_BACKEND_URL` (rewrites `/api/*` to gateway)
   - launch docs: `LAUNCH_PLAN.md`, `RELEASE_ASAP_CHECKLIST.md`, `V1_SCOPE.md`
   - gateway runtime flags endpoint: `GET /internal/frontend-flags` (for future feature flags)
-  - legacy `ecom-frontend` (Vite) deprecated; storefront is primary
+  - `ecom-frontend` (Vite) removed from active development; `ecom-storefront` is the only frontend codebase
+  - cookie-backed refresh-token auth flow via `app/api/auth/[...path]/route.ts`, with access token in memory and 401 refresh-retry
+  - live public/store APIs wired: products, search, collections filters, cart, checkout order/payment saga polling
+  - live account APIs wired: profile, addresses, preferences, notifications, order history/details, security/wishlist baseline
+  - live admin APIs wired: products CRUD, inventory stock lookup/upsert, orders read lookup, reviews moderation, payment ops, search dataset health
 - Release pipeline workflow added: `.github/workflows/backend-release.yml` with staged promotion (`quality -> package -> staging -> production`) and environment gates.
 - Load test harness added: `ecom-back/load-tests/k6/flash-sale-inventory.js` with SLO thresholds (`p95`, success-rate, oversell=0) and `ecom-back/load-tests/run-flash-sale.ps1`.
 - Baseline k6 suites added for browse/cart/checkout:
@@ -247,5 +260,3 @@ Generated on: 2026-02-21
 3. Keep calibration delta changes tied to artifact evidence and weekly signoff.
 4. Complete user/review services and lock backend phase-exit criteria.
 5. Increase SOLID maturity with SRP/port-adapter refactors in complex services.
-
-

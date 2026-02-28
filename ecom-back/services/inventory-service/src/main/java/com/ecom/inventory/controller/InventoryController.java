@@ -15,14 +15,19 @@ import com.ecom.inventory.dto.ReservationActionRequest;
 import com.ecom.inventory.dto.ReservationRequest;
 import com.ecom.inventory.dto.StockResponse;
 import com.ecom.inventory.dto.StockUpsertRequest;
+import com.ecom.inventory.exception.InventoryNotFoundException;
 import com.ecom.inventory.service.InventoryUseCases;
 
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/inventory")
 @Validated
 public class InventoryController {
+
+    private static final Logger log = LoggerFactory.getLogger(InventoryController.class);
 
     private final InventoryUseCases inventoryService;
 
@@ -32,12 +37,20 @@ public class InventoryController {
 
     @PostMapping("/stock")
     public ResponseEntity<StockResponse> upsertStock(@Valid @RequestBody StockUpsertRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(inventoryService.upsertStock(request));
+        log.info("Inventory upsert requested sku={} availableQuantity={}", request.sku(), request.availableQuantity());
+        StockResponse response = inventoryService.upsertStock(request);
+        log.info("Inventory upsert completed sku={} availableQuantity={} reservedQuantity={}",
+                response.sku(), response.availableQuantity(), response.reservedQuantity());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/stock/{sku}")
     public StockResponse getStock(@PathVariable String sku) {
-        return inventoryService.getStock(sku);
+        log.info("Inventory lookup requested sku={}", sku);
+        StockResponse response = inventoryService.getStock(sku);
+        log.info("Inventory lookup completed sku={} availableQuantity={} reservedQuantity={}",
+                response.sku(), response.availableQuantity(), response.reservedQuantity());
+        return response;
     }
 
     @PostMapping("/reserve")
@@ -57,11 +70,19 @@ public class InventoryController {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<String> handleBadRequest(IllegalArgumentException ex) {
+        log.warn("Inventory request validation error: {}", ex.getMessage());
         return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+
+    @ExceptionHandler(InventoryNotFoundException.class)
+    public ResponseEntity<String> handleNotFound(InventoryNotFoundException ex) {
+        log.warn("Inventory lookup not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<String> handleConflict(IllegalStateException ex) {
+        log.warn("Inventory request conflict: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

@@ -49,7 +49,7 @@ Last updated: 2026-02-21
 - 2026-02-20: Refactored API gateway JWT guard for SRP by extracting route policy (`GatewayAuthRoutePolicy`) and auth validation client (`AuthValidationClient`) from `JwtAuthFilter`.
 - 2026-02-20: Added event contract governance baseline via `contracts/events/event-contracts.json`, per-event schema files, and CI validator script `check_event_contracts.py` wired into `backend-quality.yml` and `backend-release.yml`.
 - 2026-02-20: Added release-gate drill evidence enforcement via `check_release_gate_drill_evidence.py` and wired it into `release-gate-drill.yml` to fail when staged/prod evidence is still `missing` or `attention_required`.
-- 2026-02-21: Scaffolded Next.js storefront (`ecom-storefront`) with App Router, stitch design system (Voluspa style), routes (home/shop/products/search/cart/account/collections), Header nav, API proxy to gateway. Deprecated `ecom-frontend` (Vite).
+- 2026-02-21: Scaffolded Next.js storefront (`ecom-storefront`) with App Router, stitch design system (Voluspa style), routes (home/shop/products/search/cart/account/collections), Header nav, API proxy to gateway. `ecom-frontend` (Vite) removed from active development.
 - 2026-02-21: Phase 1 core infrastructure: apiClient (X-API-Version, X-Correlation-Id, Auth header, 401 refresh retry, GET retry), AuthContext (JWT decode, roles, login/signup/logout, sessionStorage), AccountGuard/AdminGuard, React Query provider, login/signup/unauthorized pages, route groups (account), (admin).
 - 2026-02-21: Admin console: AdminSidebar (stitch design), admin dashboard, Products CRUD (list/create/edit), ProductForm, product API proxy (route handlers), login redirects admins to /admin/dashboard. No separate admin login.
 - 2026-02-21: Product service: Cloudinary image upload integration (`POST /api/products/images`), Product `imageUrls` field, conditional Cloudinary beans when `cloudinary.cloud-name` set. Admin ProductForm image picker (upload to Cloudinary, preview, remove). `lib/api/products.ts` and `/api/products/images` proxy.
@@ -471,6 +471,5 @@ Last updated: 2026-02-21
 - `API_DOCS.md` added in each service folder and in `api-gateway`.
 - Rule: update corresponding `API_DOCS.md` whenever endpoint contracts, entities, stores, or async flow change.
 - Required sections validated by CI: `Endpoints`, `Entities`, `Data Stores`, `Flow`.
-
 
 

@@ -80,7 +80,10 @@ export async function fetchWithAuthRetry(
 
 function getHeaders(skipAuth = false): Record<string, string> {
   const correlationId = generateCorrelationId();
-  const headers = { ...DEFAULT_HEADERS, "X-Correlation-Id": correlationId };
+  const headers: Record<string, string> = {
+    ...DEFAULT_HEADERS,
+    "X-Correlation-Id": correlationId,
+  };
 
   if (!skipAuth && accessTokenProvider) {
     const token = accessTokenProvider();
@@ -133,7 +136,24 @@ async function fetchWithRetry(
   const maxAttempts = isGet && !skipRetry ? GET_RETRY_COUNT + 1 : 1;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const res = await fetch(url, init);
+    let res: Response;
+    try {
+      res = await fetch(url, init);
+    } catch (error) {
+      if (!isGet || skipRetry || attempt === maxAttempts) {
+        const message = error instanceof Error ? error.message : "Network request failed";
+        throw new ApiError(
+          `Backend unreachable at ${url}. ${message}`,
+          null,
+          0,
+          (init.headers instanceof Headers
+            ? init.headers.get("X-Correlation-Id")
+            : undefined) ?? undefined
+        );
+      }
+      await new Promise((r) => setTimeout(r, GET_RETRY_DELAY_MS));
+      continue;
+    }
     lastRes = res;
 
     if (res.ok) return res;

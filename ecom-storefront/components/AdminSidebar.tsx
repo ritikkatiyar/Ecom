@@ -7,6 +7,10 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
   { href: "/admin/products", label: "Products", icon: "inventory_2" },
   { href: "/admin/orders", label: "Orders", icon: "shopping_bag" },
+  { href: "/admin/inventory", label: "Inventory", icon: "warehouse" },
+  { href: "/admin/reviews", label: "Reviews", icon: "reviews" },
+  { href: "/admin/payments", label: "Payments", icon: "payments" },
+  { href: "/admin/system", label: "System", icon: "monitor_heart" },
 ];
 
 export function AdminSidebar() {

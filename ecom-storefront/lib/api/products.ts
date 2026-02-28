@@ -1,7 +1,7 @@
 /**
  * Product API - list, get, create, update, image upload.
  */
-import { apiClient, fetchWithAuthRetry, getAccessToken } from "../apiClient";
+import { ApiError, apiClient, fetchWithAuthRetry, getAccessToken } from "../apiClient";
 import { generateCorrelationId } from "../utils/uuid";
 import type { Product, ProductPage, ProductRequest } from "../types/product";
 
@@ -51,6 +51,9 @@ export async function updateProduct(
 }
 
 export async function uploadProductImages(files: File[]): Promise<string[]> {
+  if (!files.length) {
+    throw new Error("No files selected for upload");
+  }
   const formData = new FormData();
   files.forEach((f) => formData.append("files", f));
   const BASE_URL =
@@ -71,14 +74,19 @@ export async function uploadProductImages(files: File[]): Promise<string[]> {
   });
   if (!res.ok) {
     const text = await res.text();
-    let msg = text;
+    let msg = text || "Upload failed";
+    let correlationId: string | undefined =
+      res.headers.get("X-Correlation-Id") ??
+      res.headers.get("x-correlation-id") ??
+      undefined;
     try {
       const j = JSON.parse(text);
       msg = j.message ?? j.error ?? text;
+      correlationId = correlationId ?? j.correlationId ?? undefined;
     } catch {
       // ignore
     }
-    throw new Error(msg || "Upload failed");
+    throw new ApiError(msg, null, res.status, correlationId);
   }
   return res.json();
 }

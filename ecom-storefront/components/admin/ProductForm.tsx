@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { ApiError } from "@/lib/apiClient";
 import { uploadProductImages } from "@/lib/api/products";
 import type { ProductRequest } from "@/lib/types/product";
 
@@ -23,17 +24,26 @@ export function ProductForm({
   const [imageUrls, setImageUrls] = useState<string[]>(initial?.imageUrls ?? []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadInfo, setUploadInfo] = useState<string | null>(null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files?.length) return;
     setUploadError(null);
+    setUploadInfo(`Uploading ${files.length} image(s)...`);
     setUploading(true);
     try {
       const urls = await uploadProductImages(Array.from(files));
       setImageUrls((prev) => [...prev, ...urls]);
+      setUploadInfo(`Uploaded ${urls.length} image(s) successfully.`);
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      if (err instanceof ApiError) {
+        const cid = err.correlationId ? ` (Correlation ID: ${err.correlationId})` : "";
+        setUploadError(`${err.message}${cid}`);
+      } else {
+        setUploadError(err instanceof Error ? err.message : "Upload failed");
+      }
+      setUploadInfo(null);
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -49,8 +59,10 @@ export function ProductForm({
     const form = formRef.current;
     if (!form) return;
     const fd = new FormData(form);
-    const colors = (fd.get("colors") as string)?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
-    const sizes = (fd.get("sizes") as string)?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
+    const colors =
+      (fd.get("colors") as string)?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
+    const sizes =
+      (fd.get("sizes") as string)?.split(",").map((s) => s.trim()).filter(Boolean) ?? [];
     onSubmit({
       name: (fd.get("name") as string) ?? "",
       description: (fd.get("description") as string) || undefined,
@@ -71,21 +83,26 @@ export function ProductForm({
       className="max-w-2xl space-y-6 rounded-xl border border-slate-200 bg-white p-8"
     >
       {error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {uploadError && (
         <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {uploadError}
+          <p>{uploadError}</p>
+          <p className="mt-1 text-xs">
+            Retry upload. If this persists, share the correlation ID for backend tracing.
+          </p>
+        </div>
+      )}
+
+      {uploadInfo && (
+        <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          {uploadInfo}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Images
-        </label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Images</label>
         <div className="space-y-3">
           {imageUrls.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -94,11 +111,7 @@ export function ProductForm({
                   key={url}
                   className="relative group w-20 h-20 rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
                 >
-                  <img
-                    src={url}
-                    alt="Product"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={url} alt="Product" className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(url)}
@@ -125,16 +138,14 @@ export function ProductForm({
               disabled={uploading}
               className="px-4 py-2 border border-dashed border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             >
-              {uploading ? "Uploading…" : "Add images"}
+              {uploading ? "Uploading..." : "Add images"}
             </button>
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Name *
-        </label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
         <input
           name="name"
           type="text"
@@ -145,9 +156,7 @@ export function ProductForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Description
-        </label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
         <textarea
           name="description"
           rows={3}
@@ -158,9 +167,7 @@ export function ProductForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Category *
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Category *</label>
           <input
             name="category"
             type="text"
@@ -170,9 +177,7 @@ export function ProductForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
-            Brand *
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Brand *</label>
           <input
             name="brand"
             type="text"
@@ -184,9 +189,7 @@ export function ProductForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
-          Price (₹) *
-        </label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Price (INR) *</label>
         <input
           name="price"
           type="number"
@@ -240,7 +243,7 @@ export function ProductForm({
           disabled={isSubmitting}
           className="px-6 py-3 bg-[#2badee] text-white font-semibold rounded-lg hover:bg-[#2badee]/90 disabled:opacity-50"
         >
-          {isSubmitting ? "Saving…" : "Save"}
+          {isSubmitting ? "Saving..." : "Save"}
         </button>
         <Link
           href="/admin/products"

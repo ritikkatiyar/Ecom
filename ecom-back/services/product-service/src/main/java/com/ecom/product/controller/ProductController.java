@@ -1,5 +1,9 @@
 package com.ecom.product.controller;
 
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +34,10 @@ import jakarta.validation.Valid;
 @Validated
 public class ProductController {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "name", "price", "category", "brand", "active");
+
     private final ProductUseCases productService;
 
     public ProductController(ProductUseCases productService) {
@@ -59,15 +67,30 @@ public class ProductController {
 
     @GetMapping
     public Page<Product> list(
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String brand,
-            @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "name") String sortBy,
-            @RequestParam(defaultValue = "asc") String direction) {
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "sortBy", defaultValue = "name") String sortBy,
+            @RequestParam(name = "direction", defaultValue = "asc") String direction) {
+        if (page < 0) {
+            throw new IllegalArgumentException("page must be >= 0");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("size must be between 1 and 100");
+        }
+
+        String normalizedSortBy = (sortBy == null || sortBy.isBlank()) ? "name" : sortBy.trim();
+        if (!ALLOWED_SORT_FIELDS.contains(normalizedSortBy)) {
+            throw new IllegalArgumentException("Unsupported sortBy field: " + normalizedSortBy);
+        }
+
         Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+        log.info("Product list request page={} size={} category={} brand={} q={} sortBy={} direction={}",
+                page, size, category, brand, q, normalizedSortBy, sortDirection);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, normalizedSortBy));
         return productService.search(category, brand, q, pageable);
     }
 

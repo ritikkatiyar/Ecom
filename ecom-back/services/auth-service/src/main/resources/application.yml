@@ -52,6 +52,12 @@ management:
 
 server:
   port: 8081
+  servlet:
+    session:
+      tracking-modes: cookie
+      cookie:
+        http-only: true
+        same-site: lax
 
 springdoc:
   api-docs:

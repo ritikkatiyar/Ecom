@@ -11,7 +11,7 @@ import {
 } from "react";
 import { setAccessTokenProvider, setOn401Handler } from "@/lib/apiClient";
 import * as authApi from "@/lib/api/auth";
-import { getRolesFromToken, isTokenExpired } from "@/lib/utils/jwt";
+import { getRolesFromToken } from "@/lib/utils/jwt";
 
 export interface AuthState {
   isAuthenticated: boolean;
@@ -29,37 +29,8 @@ export interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const STORAGE_ACCESS = "ecom_access_token";
-const STORAGE_REFRESH = "ecom_refresh_token";
-
-function loadStoredTokens(): {
-  accessToken: string | null;
-  refreshToken: string | null;
-} {
-  if (typeof window === "undefined") return { accessToken: null, refreshToken: null };
-  const access = sessionStorage.getItem(STORAGE_ACCESS);
-  const refresh = sessionStorage.getItem(STORAGE_REFRESH);
-  return {
-    accessToken: access,
-    refreshToken: refresh,
-  };
-}
-
-function saveTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.setItem(STORAGE_ACCESS, accessToken);
-  sessionStorage.setItem(STORAGE_REFRESH, refreshToken);
-}
-
-function clearTokens(): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(STORAGE_ACCESS);
-  sessionStorage.removeItem(STORAGE_REFRESH);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const roles = useMemo(() => {
@@ -82,39 +53,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [accessToken]);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
-    const stored = loadStoredTokens();
-    const rt = refreshToken ?? stored.refreshToken;
-    if (!rt) return false;
-
     try {
-      const res = await authApi.refresh(rt);
+      const res = await authApi.refresh();
       setAccessToken(res.accessToken);
-      setRefreshToken(res.refreshToken);
-      saveTokens(res.accessToken, res.refreshToken);
       return true;
     } catch {
       setAccessToken(null);
-      setRefreshToken(null);
-      clearTokens();
       return false;
     }
-  }, [refreshToken]);
+  }, []);
 
   /** Returns new access token for apiClient 401 retry. */
   const handle401 = useCallback(async (): Promise<string | null> => {
-    const stored = loadStoredTokens();
-    const rt = stored.refreshToken;
-    if (!rt) return null;
     try {
-      const res = await authApi.refresh(rt);
+      const res = await authApi.refresh();
       setAccessToken(res.accessToken);
-      setRefreshToken(res.refreshToken);
-      saveTokens(res.accessToken, res.refreshToken);
       return res.accessToken;
     } catch {
       setAccessToken(null);
-      setRefreshToken(null);
-      clearTokens();
       return null;
     }
   }, []);
@@ -122,56 +78,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string): Promise<string[]> => {
     const res = await authApi.login({ email, password });
     setAccessToken(res.accessToken);
-    setRefreshToken(res.refreshToken);
-    saveTokens(res.accessToken, res.refreshToken);
     return getRolesFromToken(res.accessToken);
   }, []);
 
   const signup = useCallback(async (email: string, password: string, role?: string) => {
     const res = await authApi.signup({ email, password, role });
     setAccessToken(res.accessToken);
-    setRefreshToken(res.refreshToken);
-    saveTokens(res.accessToken, res.refreshToken);
   }, []);
 
   const logout = useCallback(async () => {
-    const access = accessToken ?? loadStoredTokens().accessToken;
-    const refresh = refreshToken ?? loadStoredTokens().refreshToken;
-    if (access) {
+    if (accessToken) {
       try {
-        await authApi.logout(access, refresh);
+        await authApi.logout(accessToken);
       } catch {
-        // ignore - clear state regardless
+        // ignore - clear client auth state regardless
       }
     }
     setAccessToken(null);
-    setRefreshToken(null);
-    clearTokens();
-  }, [accessToken, refreshToken]);
+  }, [accessToken]);
 
   useEffect(() => {
-    const stored = loadStoredTokens();
-    if (stored.accessToken && stored.refreshToken) {
-      if (isTokenExpired(stored.accessToken)) {
-        authApi
-          .refresh(stored.refreshToken)
-          .then((res) => {
-            setAccessToken(res.accessToken);
-            setRefreshToken(res.refreshToken);
-            saveTokens(res.accessToken, res.refreshToken);
-          })
-          .catch(() => {
-            clearTokens();
-          })
-          .finally(() => setIsLoading(false));
-      } else {
-        setAccessToken(stored.accessToken);
-        setRefreshToken(stored.refreshToken);
-        setIsLoading(false);
-      }
-    } else {
-      setIsLoading(false);
-    }
+    authApi
+      .refresh()
+      .then((res) => setAccessToken(res.accessToken))
+      .catch(() => setAccessToken(null))
+      .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {

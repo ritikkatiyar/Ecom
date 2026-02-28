@@ -18,7 +18,7 @@ export interface SignupRequest {
 
 export interface TokenResponse {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   tokenType: string;
   expiresInSeconds: number;
 }
@@ -50,12 +50,11 @@ export async function signup(
 }
 
 export async function refresh(
-  refreshToken: string,
   config?: ApiRequestConfig
 ): Promise<TokenResponse> {
   return apiClient<TokenResponse>("/api/auth/refresh", {
     method: "POST",
-    body: JSON.stringify({ refreshToken }),
+    body: JSON.stringify({}),
     skipAuth: true,
     skipRetry: true,
     ...config,
@@ -63,8 +62,7 @@ export async function refresh(
 }
 
 export async function logout(
-  accessToken: string,
-  refreshToken: string | null
+  accessToken: string
 ): Promise<void> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${accessToken}`,
@@ -74,7 +72,7 @@ export async function logout(
   await apiClient<void>("/api/auth/logout", {
     method: "POST",
     headers,
-    body: JSON.stringify({ refreshToken }),
+    body: JSON.stringify({}),
     skipAuth: true,
     skipRetry: true,
   });

@@ -1,0 +1,164 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-orders
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: orders
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: varchar(50)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_amount
+                  type: decimal(15,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: varchar(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: items_json
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_orders_user_created
+            tableName: orders
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: created_at
+        - createIndex:
+            indexName: idx_orders_status_updated
+            tableName: orders
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: updated_at
+
+  - changeSet:
+      id: 002-create-order-consumed-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: order_consumed_events
+      changes:
+        - createTable:
+            tableName: order_consumed_events
+            columns:
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: consumed_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 003-create-order-outbox-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: order_outbox_events
+      changes:
+        - createTable:
+            tableName: order_outbox_events
+            columns:
+              - column:
+                  name: id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: topic
+                  type: varchar(128)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message_key
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload
+                  type: varchar(20000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attempts
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_order_outbox_status
+            tableName: order_outbox_events
+            columns:
+              - column:
+                  name: status
+              - column:
+                  name: created_at

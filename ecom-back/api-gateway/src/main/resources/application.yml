@@ -21,7 +21,7 @@ spring:
                 name: authCircuit
                 fallbackUri: forward:/fallback/auth
           metadata:
-            response-timeout: 15000
+            response-timeout: 60000
         - id: product
           uri: http://localhost:8083
           predicates:
@@ -32,7 +32,7 @@ spring:
                 name: productCircuit
                 fallbackUri: forward:/fallback/product
           metadata:
-            response-timeout: 15000
+            response-timeout: 60000
         - id: inventory
           uri: http://localhost:8084
           predicates:
@@ -43,7 +43,7 @@ spring:
                 name: inventoryCircuit
                 fallbackUri: forward:/fallback/inventory
           metadata:
-            response-timeout: 4000
+            response-timeout: 60000
         - id: cart
           uri: http://localhost:8085
           predicates:
@@ -54,7 +54,7 @@ spring:
                 name: cartCircuit
                 fallbackUri: forward:/fallback/cart
           metadata:
-            response-timeout: 4000
+            response-timeout: 60000
         - id: order
           uri: http://localhost:8086
           predicates:
@@ -65,7 +65,7 @@ spring:
                 name: orderCircuit
                 fallbackUri: forward:/fallback/order
           metadata:
-            response-timeout: 5000
+            response-timeout: 60000
         - id: payment
           uri: http://localhost:8087
           predicates:
@@ -76,7 +76,7 @@ spring:
                 name: paymentCircuit
                 fallbackUri: forward:/fallback/payment
           metadata:
-            response-timeout: 5000
+            response-timeout: 60000
         - id: search
           uri: http://localhost:8089
           predicates:
@@ -87,7 +87,7 @@ spring:
                 name: searchCircuit
                 fallbackUri: forward:/fallback/search
           metadata:
-            response-timeout: 3000
+            response-timeout: 60000
 
 server:
   port: 8080
@@ -134,11 +134,21 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 5
         waitDurationInOpenState: 20s
         automaticTransitionFromOpenToHalfOpenEnabled: true
+      productExtended:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 70
+        slowCallRateThreshold: 90
+        slowCallDurationThreshold: 20s
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 20s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
     instances:
       authCircuit:
         baseConfig: default
       productCircuit:
-        baseConfig: default
+        baseConfig: productExtended
       inventoryCircuit:
         baseConfig: default
       cartCircuit:
@@ -152,16 +162,19 @@ resilience4j:
   timelimiter:
     configs:
       default:
-        timeoutDuration: 3s
+        timeoutDuration: 60s
         cancelRunningFuture: true
       authExtended:
-        timeoutDuration: 15s
+        timeoutDuration: 60s
+        cancelRunningFuture: true
+      productExtended:
+        timeoutDuration: 60s
         cancelRunningFuture: true
     instances:
       authCircuit:
         baseConfig: authExtended
       productCircuit:
-        baseConfig: default
+        baseConfig: productExtended
       inventoryCircuit:
         baseConfig: default
       cartCircuit:
