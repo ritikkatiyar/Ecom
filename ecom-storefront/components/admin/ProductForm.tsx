@@ -13,6 +13,23 @@ interface ProductFormProps {
   error?: string;
 }
 
+const MAX_IMAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_REQUEST_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+}
+
 export function ProductForm({
   initial,
   onSubmit,
@@ -29,12 +46,48 @@ export function ProductForm({
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files?.length) return;
+    const selected = Array.from(files);
+    const totalBytes = selected.reduce((sum, file) => sum + file.size, 0);
+
+    const invalidType = selected.find((file) => !ALLOWED_IMAGE_TYPES.has(file.type));
+    if (invalidType) {
+      setUploadInfo(null);
+      setUploadError(
+        `Unsupported file type for "${invalidType.name}". Allowed: JPEG, PNG, WEBP, GIF.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    const oversize = selected.find((file) => file.size > MAX_IMAGE_FILE_SIZE_BYTES);
+    if (oversize) {
+      setUploadInfo(null);
+      setUploadError(
+        `"${oversize.name}" is ${formatBytes(oversize.size)}. Max per file is ${formatBytes(
+          MAX_IMAGE_FILE_SIZE_BYTES
+        )}.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    if (totalBytes > MAX_IMAGE_REQUEST_SIZE_BYTES) {
+      setUploadInfo(null);
+      setUploadError(
+        `Selected files total ${formatBytes(totalBytes)}. Max upload request size is ${formatBytes(
+          MAX_IMAGE_REQUEST_SIZE_BYTES
+        )}.`
+      );
+      e.target.value = "";
+      return;
+    }
+
     setUploadError(null);
-    setUploadInfo(`Uploading ${files.length} image(s)...`);
+    setUploadInfo(`Uploading ${selected.length} image(s)...`);
     setUploading(true);
     try {
-      const urls = await uploadProductImages(Array.from(files));
-      setImageUrls((prev) => [...prev, ...urls]);
+      const urls = await uploadProductImages(selected);
+      setImageUrls((prev) => Array.from(new Set([...prev, ...urls])));
       setUploadInfo(`Uploaded ${urls.length} image(s) successfully.`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -103,6 +156,9 @@ export function ProductForm({
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">Images</label>
+        <p className="mb-2 text-xs text-slate-500">
+          Accepted: JPEG, PNG, WEBP, GIF. Max 10MB/file and 10MB total/request.
+        </p>
         <div className="space-y-3">
           {imageUrls.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -240,7 +296,7 @@ export function ProductForm({
       <div className="flex gap-4 pt-4">
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || uploading}
           className="px-6 py-3 bg-[#2badee] text-white font-semibold rounded-lg hover:bg-[#2badee]/90 disabled:opacity-50"
         >
           {isSubmitting ? "Saving..." : "Save"}

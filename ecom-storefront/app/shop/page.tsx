@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -30,7 +30,7 @@ export default async function ShopPage({
     direction: "asc",
     category: sp.category,
     brand: sp.brand,
-  });
+  }, { revalidateSeconds: 60 });
   const products = page.content.filter((p) => p.active);
 
   return (

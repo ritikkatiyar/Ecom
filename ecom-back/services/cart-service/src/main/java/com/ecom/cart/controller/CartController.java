@@ -33,30 +33,38 @@ public class CartController {
     }
 
     @PostMapping("/items")
-    public ResponseEntity<CartResponse> addItem(@Valid @RequestBody CartItemRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(cartUseCases.addItem(request));
+    public ResponseEntity<CartResponse> addItem(
+            @Valid @RequestBody CartItemRequest request,
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "guestId", required = false) String guestId) {
+        CartItemRequest ownerScopedRequest = new CartItemRequest(
+                userId,
+                guestId,
+                request.productId(),
+                request.quantity());
+        return ResponseEntity.status(HttpStatus.CREATED).body(cartUseCases.addItem(ownerScopedRequest));
     }
 
     @GetMapping
     public CartResponse getCart(
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String guestId) {
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "guestId", required = false) String guestId) {
         return cartUseCases.getCart(userId, guestId);
     }
 
     @DeleteMapping("/items/{productId}")
     public CartResponse removeItem(
             @PathVariable String productId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String guestId) {
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "guestId", required = false) String guestId) {
         return cartUseCases.removeItem(userId, guestId, productId);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void clearCart(
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String guestId) {
+            @RequestParam(name = "userId", required = false) Long userId,
+            @RequestParam(name = "guestId", required = false) String guestId) {
         cartUseCases.clearCart(userId, guestId);
     }
 

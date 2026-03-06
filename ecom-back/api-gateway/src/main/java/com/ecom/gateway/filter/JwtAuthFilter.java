@@ -8,6 +8,7 @@ import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.MultiValueMap;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -36,6 +37,9 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         HttpMethod method = exchange.getRequest().getMethod();
         if (method == HttpMethod.OPTIONS || !gatewayAuthRoutePolicy.isProtected(path, method)) {
+            return chain.filter(exchange);
+        }
+        if (isGuestCartRequest(path, exchange.getRequest().getQueryParams())) {
             return chain.filter(exchange);
         }
 
@@ -74,5 +78,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
     @Override
     public int getOrder() {
         return -150;
+    }
+
+    private boolean isGuestCartRequest(String path, MultiValueMap<String, String> queryParams) {
+        if (!path.startsWith("/api/cart")) {
+            return false;
+        }
+        String guestId = queryParams.getFirst("guestId");
+        String userId = queryParams.getFirst("userId");
+        return guestId != null && !guestId.isBlank() && (userId == null || userId.isBlank());
     }
 }

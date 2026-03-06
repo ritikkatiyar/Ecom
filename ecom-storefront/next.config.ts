@@ -11,7 +11,6 @@ const nextConfig: NextConfig = {
     // External rewrites can return 405 for POST.
     const apiPaths = [
       "products",
-      "cart",
       "orders",
       "inventory",
       "search",

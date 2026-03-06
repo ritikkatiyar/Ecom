@@ -80,7 +80,8 @@ export default function AdminInventoryPage() {
               <label className="block text-xs uppercase tracking-widest text-slate-400 mb-1">
                 Product
               </label>
-              <select
+              <input
+                list="inventory-product-options"
                 value={selectedProductId}
                 onChange={(e) => {
                   const next = e.target.value;
@@ -88,18 +89,17 @@ export default function AdminInventoryPage() {
                   setSkuLookup(next);
                   setSkuUpsert(next);
                 }}
+                placeholder="Type product id or choose suggestion"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900"
-              >
-                <option value="">Select product</option>
+              />
+              <datalist id="inventory-product-options">
                 {productsQuery.data?.content.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.id})
-                  </option>
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
-              </select>
+              </datalist>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-              Selected product id is used as SKU in current checkout/inventory flow.
+              Product id is used as SKU in current checkout/inventory flow. You can type manually or pick a suggestion.
             </div>
           </div>
         )}

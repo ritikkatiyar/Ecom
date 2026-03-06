@@ -280,3 +280,60 @@ flowchart TB
 - Domain event model: `common/common-events/src/main/java/com/ecom/common/DomainEvent.java`
 - Outbox support: `common/common-core/src/main/java/com/ecom/common/reliability/OutboxPublishSupport.java`
 - Contract validation: `ecom-back/scripts/check_event_contracts.py`
+
+---
+
+## Order to Kafka Flow (File-by-File)
+
+This is the exact publish path used by `order-service`.
+
+1. API receives create-order request  
+   File: `services/order-service/src/main/java/com/ecom/order/controller/OrderController.java`
+
+2. Service creates order and triggers event publishing  
+   Method: `createOrder(...)`  
+   File: `services/order-service/src/main/java/com/ecom/order/service/OrderService.java`
+
+3. Event payload object is built for order-created  
+   Method: `publishOrderCreated(...)`  
+   File: `services/order-service/src/main/java/com/ecom/order/service/OrderEventPublisher.java`  
+   Payload type: `services/order-service/src/main/java/com/ecom/order/service/OrderCreatedPayload.java`
+
+4. Event is enqueued in outbox (not directly sent to Kafka)  
+   Method: `enqueue(...)`  
+   File: `services/order-service/src/main/java/com/ecom/order/service/OutboxService.java`
+
+5. Standard envelope is created and serialized  
+   Envelope type: `common/common-events/src/main/java/com/ecom/common/DomainEvent.java`
+
+6. Outbox row is saved as `PENDING` in `order_outbox_events`  
+   Entity: `services/order-service/src/main/java/com/ecom/order/entity/OutboxEventRecord.java`  
+   Repository: `services/order-service/src/main/java/com/ecom/order/repository/OutboxEventRepository.java`
+
+7. Scheduled publisher polls pending outbox rows  
+   Method: `publishPending()` runs every 3 seconds  
+   File: `services/order-service/src/main/java/com/ecom/order/service/OutboxPublisher.java`
+
+8. Kafka send happens here  
+   Call: `kafkaTemplate.send(topic, messageKey, payload).get(...)`  
+   File: `common/common-core/src/main/java/com/ecom/common/reliability/OutboxPublishSupport.java`
+
+9. Send result updates outbox status  
+   - Success -> `SENT`  
+   - Failure -> increment attempts, keep `PENDING` or mark `FAILED` after max retry  
+   File: `common/common-core/src/main/java/com/ecom/common/reliability/OutboxPublishSupport.java`
+
+10. Runtime topic/retry config used by order-service  
+   File: `services/order-service/src/main/resources/application.yml`  
+   Keys:
+   - `app.kafka.topics.order-created`
+   - `app.kafka.topics.order-timed-out`
+   - `app.outbox.max-retry`
+
+11. Same pipeline used for timeout event publish (`order.timed-out.v1`)  
+   Producer method: `publishOrderTimedOut(...)`  
+   File: `services/order-service/src/main/java/com/ecom/order/service/OrderEventPublisher.java`
+
+12. Example downstream consumers for `order.created.v1`  
+   - Inventory: `services/inventory-service/src/main/java/com/ecom/inventory/kafka/InventorySagaConsumer.java`
+   - Payment: `services/payment-service/src/main/java/com/ecom/payment/kafka/OrderCreatedConsumer.java`

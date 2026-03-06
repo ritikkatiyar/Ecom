@@ -105,11 +105,11 @@ Acceptance:
 - Admin dashboard shows real backend operational signals.
 
 ## Phase F - Release Hardening
-Status: `Pending`
+Status: `In Progress`
 
-1. Loading/error boundaries for all mapped pages.
-2. API contract checks against gateway responses.
-3. Performance pass (SSR + caching decisions).
+1. Loading/error boundaries for all mapped pages. `Done`
+2. API contract checks against gateway responses. `Done`
+3. Performance pass (SSR + caching decisions). `Done`
 4. Staging smoke for browse/search/cart/auth.
 
 Acceptance:

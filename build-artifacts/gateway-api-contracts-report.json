@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-03-05T07:32:10.130959+00:00",
+  "baseUrl": "http://localhost:8080",
+  "tags": [
+    "gateway-core"
+  ],
+  "excludeTags": [],
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "name": "gateway.version.header.enforced",
+      "result": "PASS",
+      "detail": "status=400",
+      "status": 400
+    },
+    {
+      "name": "gateway.auth.required.orders",
+      "result": "PASS",
+      "detail": "status=401",
+      "status": 401
+    },
+    {
+      "name": "gateway.auth.required.reviews",
+      "result": "PASS",
+      "detail": "status=401",
+      "status": 401
+    }
+  ]
+}

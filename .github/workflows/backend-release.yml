@@ -175,14 +175,30 @@ jobs:
           fi
           python ecom-back/scripts/post_deploy_smoke.py
 
+      - name: Run staging gateway API contract checks
+        id: gateway_contracts_staging
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live'
+        continue-on-error: true
+        env:
+          GATEWAY_CONTRACT_BASE_URL: ${{ secrets.STAGING_GATEWAY_BASE_URL }}
+          GATEWAY_API_VERSION: v1
+          GATEWAY_CONTRACT_TAGS: gateway-core,service-contracts
+          GATEWAY_CONTRACT_TIMEOUT_SECONDS: 8
+        run: |
+          if [ -z "$GATEWAY_CONTRACT_BASE_URL" ]; then
+            echo "STAGING_GATEWAY_BASE_URL not configured; cannot execute gateway API contract checks."
+            exit 1
+          fi
+          python ecom-back/scripts/check_gateway_api_contracts.py
+
       - name: Trigger staging rollback on smoke failure
         id: rollback_staging
-        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && (steps.smoke_staging.outcome == 'failure' || steps.gateway_contracts_staging.outcome == 'failure')
         continue-on-error: true
         env:
           ROLLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_WEBHOOK }}
           ROLLBACK_ENVIRONMENT: staging
-          ROLLBACK_REASON: post_deploy_smoke_failed
+          ROLLBACK_REASON: post_deploy_gate_failed
           ROLLBACK_REF: ${{ github.ref }}
           ROLLBACK_RUN_ID: ${{ github.run_id }}
         run: |
@@ -196,7 +212,7 @@ jobs:
 
       - name: Verify staging rollback callback
         id: rollback_callback_staging
-        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && (steps.smoke_staging.outcome == 'failure' || steps.gateway_contracts_staging.outcome == 'failure')
         continue-on-error: true
         env:
           CALLBACK_WEBHOOK_URL: ${{ secrets.STAGING_ROLLBACK_VERIFY_WEBHOOK }}
@@ -226,6 +242,7 @@ jobs:
             echo "|---|---|"
             echo "| Deploy mode | ${{ steps.deploy_staging_trigger.outputs.deploy_mode || 'unknown' }} |"
             echo "| Smoke checks | ${{ steps.smoke_staging.outcome }} |"
+            echo "| Gateway API contracts | ${{ steps.gateway_contracts_staging.outcome || 'skipped' }} |"
             echo "| Rollback trigger | ${{ steps.rollback_staging.outcome || 'skipped' }} |"
             echo "| Rollback state | ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }} |"
             echo "| Rollback callback verification | ${{ steps.rollback_callback_staging.outcome || 'skipped' }} |"
@@ -238,6 +255,7 @@ jobs:
             "environment": "staging",
             "deployMode": "${{ steps.deploy_staging_trigger.outputs.deploy_mode || 'unknown' }}",
             "smokeOutcome": "${{ steps.smoke_staging.outcome }}",
+            "gatewayContractsOutcome": "${{ steps.gateway_contracts_staging.outcome || 'skipped' }}",
             "rollbackTriggerOutcome": "${{ steps.rollback_staging.outcome || 'skipped' }}",
             "rollbackState": "${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}",
             "rollbackCallbackOutcome": "${{ steps.rollback_callback_staging.outcome || 'skipped' }}",
@@ -252,12 +270,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: staging-release-gate-report
-          path: release-gate/staging-release-gate.json
+          path: |
+            release-gate/staging-release-gate.json
+            build-artifacts/gateway-api-contracts-report.json
+            build-artifacts/gateway-api-contracts-report.md
 
       - name: Enforce staging smoke gate
-        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && steps.smoke_staging.outcome == 'failure'
+        if: steps.deploy_staging_trigger.outputs.deploy_mode == 'live' && (steps.smoke_staging.outcome == 'failure' || steps.gateway_contracts_staging.outcome == 'failure')
         run: |
-          echo "Staging smoke checks failed. Rollback state: ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}."
+          echo "Staging release gate failed (smoke/contracts). Rollback state: ${{ steps.rollback_staging.outputs.rollback_state || 'not-required' }}."
           exit 1
 
   # deploy-production job is currently disabled.  Uncomment the `if` and

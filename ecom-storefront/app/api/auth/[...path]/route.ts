@@ -70,6 +70,7 @@ export async function POST(
   const url = `${BACKEND}/api/auth/${pathStr}`;
   const headers = new Headers(request.headers);
   headers.delete("host");
+  headers.set("X-API-Version", "v1");
 
   let requestBody: string | undefined;
   try {
@@ -145,6 +146,7 @@ export async function GET(
   const url = `${BACKEND}/api/auth/${pathStr}${request.nextUrl.search}`;
   const headers = new Headers(request.headers);
   headers.delete("host");
+  headers.set("X-API-Version", "v1");
   try {
     const res = await fetch(url, { method: "GET", headers });
     const text = await res.text();

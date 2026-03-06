@@ -38,7 +38,7 @@ public class ReviewController {
 
     @PostMapping
     public ResponseEntity<ReviewResponse> createReview(
-            @RequestParam Long userId,
+            @RequestParam(name = "userId") Long userId,
             @Valid @RequestBody CreateReviewRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewUseCases.createReview(userId, request));
     }
@@ -46,14 +46,14 @@ public class ReviewController {
     @PutMapping("/{reviewId}")
     public ReviewResponse updateReview(
             @PathVariable Long reviewId,
-            @RequestParam Long userId,
+            @RequestParam(name = "userId") Long userId,
             @Valid @RequestBody UpdateReviewRequest request) {
         return reviewUseCases.updateReview(userId, reviewId, request);
     }
 
     @DeleteMapping("/{reviewId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteReview(@PathVariable Long reviewId, @RequestParam Long userId) {
+    public void deleteReview(@PathVariable Long reviewId, @RequestParam(name = "userId") Long userId) {
         reviewUseCases.deleteReview(userId, reviewId);
     }
 
@@ -64,13 +64,13 @@ public class ReviewController {
 
     @GetMapping
     public List<ReviewResponse> listProductReviews(
-            @RequestParam String productId,
-            @RequestParam(defaultValue = "false") boolean includePending) {
+            @RequestParam(name = "productId") String productId,
+            @RequestParam(name = "includePending", defaultValue = "false") boolean includePending) {
         return reviewUseCases.listProductReviews(productId, includePending);
     }
 
     @GetMapping("/by-user")
-    public List<ReviewResponse> listUserReviews(@RequestParam Long userId) {
+    public List<ReviewResponse> listUserReviews(@RequestParam(name = "userId") Long userId) {
         return reviewUseCases.listUserReviews(userId);
     }
 

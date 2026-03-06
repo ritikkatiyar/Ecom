@@ -4,13 +4,21 @@ spring:
   profiles:
     active: redis-mysql-kafka
   datasource:
-    url: jdbc:mysql://localhost:3306/ecom_cart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://127.0.0.1:3306/ecom_cart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000&tcpKeepAlive=true
     username: root
     password: root
+    hikari:
+      initialization-fail-timeout: -1
+      connection-timeout: 30000
+      validation-timeout: 5000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
   data:
     redis:
       host: localhost

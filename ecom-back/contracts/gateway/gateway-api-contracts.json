@@ -1,0 +1,62 @@
+{
+  "contracts": [
+    {
+      "name": "gateway.version.header.enforced",
+      "tags": ["gateway-core", "versioning"],
+      "method": "GET",
+      "path": "/api/products?page=0&size=1",
+      "includeApiVersion": false,
+      "expectedStatuses": [400],
+      "expectJson": true,
+      "expectCode": "API_VERSION_MISMATCH",
+      "expectBodyFields": ["timestamp", "status", "error", "code", "message", "path", "correlationId"],
+      "requireResponseHeaders": ["X-Correlation-Id"]
+    },
+    {
+      "name": "gateway.auth.required.orders",
+      "tags": ["gateway-core", "auth-guard"],
+      "method": "GET",
+      "path": "/api/orders?userId=1",
+      "includeApiVersion": true,
+      "expectedStatuses": [401],
+      "expectJson": true,
+      "expectCode": "AUTH_TOKEN_MISSING",
+      "expectBodyFields": ["timestamp", "status", "error", "code", "message", "path", "correlationId"],
+      "requireResponseHeaders": ["X-Correlation-Id"]
+    },
+    {
+      "name": "gateway.auth.required.reviews",
+      "tags": ["gateway-core", "auth-guard"],
+      "method": "GET",
+      "path": "/api/reviews/product/1?page=0&size=1",
+      "includeApiVersion": true,
+      "expectedStatuses": [401],
+      "expectJson": true,
+      "expectCode": "AUTH_TOKEN_MISSING",
+      "expectBodyFields": ["timestamp", "status", "error", "code", "message", "path", "correlationId"],
+      "requireResponseHeaders": ["X-Correlation-Id"]
+    },
+    {
+      "name": "gateway.products.list.contract",
+      "tags": ["service-contracts", "products"],
+      "method": "GET",
+      "path": "/api/products?page=0&size=1&sortBy=name&direction=asc",
+      "includeApiVersion": true,
+      "expectedStatuses": [200],
+      "expectJson": true,
+      "expectBodyFields": ["content", "number", "size", "totalElements", "totalPages"],
+      "requireResponseHeaders": ["X-Correlation-Id"]
+    },
+    {
+      "name": "gateway.search.products.contract",
+      "tags": ["service-contracts", "search"],
+      "method": "GET",
+      "path": "/api/search/products?q=candle&page=0&size=1",
+      "includeApiVersion": true,
+      "expectedStatuses": [200],
+      "expectJson": true,
+      "expectBodyFields": ["content", "number", "size", "totalElements", "totalPages"],
+      "requireResponseHeaders": ["X-Correlation-Id"]
+    }
+  ]
+}

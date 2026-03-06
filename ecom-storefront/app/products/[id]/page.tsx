@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getProduct } from "@/lib/api/products";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
+export const revalidate = 60;
+
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -26,7 +28,7 @@ export default async function ProductPage({
 
   let product: Awaited<ReturnType<typeof getProduct>>;
   try {
-    product = await getProduct(id);
+    product = await getProduct(id, { revalidateSeconds: 60 });
   } catch {
     notFound();
   }

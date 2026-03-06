@@ -24,7 +24,8 @@ export async function getCart(params: OwnerParams): Promise<CartResponse> {
 }
 
 export async function addCartItem(request: AddItemRequest): Promise<CartResponse> {
-  return apiClient<CartResponse>("/api/cart/items", {
+  const qs = ownerSearch({ userId: request.userId, guestId: request.guestId });
+  return apiClient<CartResponse>(`/api/cart/items${qs ? `?${qs}` : ""}`, {
     method: "POST",
     body: JSON.stringify(request),
   });

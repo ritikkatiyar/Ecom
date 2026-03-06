@@ -5,6 +5,15 @@ import { ApiError, apiClient, fetchWithAuthRetry, getAccessToken } from "../apiC
 import { generateCorrelationId } from "../utils/uuid";
 import type { Product, ProductPage, ProductRequest } from "../types/product";
 
+const MAX_IMAGE_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_IMAGE_REQUEST_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
 export interface GetProductsParams {
   page?: number;
   size?: number;
@@ -16,7 +25,8 @@ export interface GetProductsParams {
 }
 
 export async function getProducts(
-  params: GetProductsParams = {}
+  params: GetProductsParams = {},
+  config: { revalidateSeconds?: number } = {}
 ): Promise<ProductPage> {
   const search = new URLSearchParams();
   if (params.page != null) search.set("page", String(params.page));
@@ -26,11 +36,24 @@ export async function getProducts(
   if (params.q) search.set("q", params.q);
   if (params.sortBy) search.set("sortBy", params.sortBy);
   if (params.direction) search.set("direction", params.direction);
-  return apiClient<ProductPage>(`/api/products?${search.toString()}`);
+  return apiClient<ProductPage>(`/api/products?${search.toString()}`, {
+    next:
+      config.revalidateSeconds != null
+        ? { revalidate: config.revalidateSeconds, tags: ["products"] }
+        : undefined,
+  });
 }
 
-export async function getProduct(id: string): Promise<Product> {
-  return apiClient<Product>(`/api/products/${id}`);
+export async function getProduct(
+  id: string,
+  config: { revalidateSeconds?: number } = {}
+): Promise<Product> {
+  return apiClient<Product>(`/api/products/${id}`, {
+    next:
+      config.revalidateSeconds != null
+        ? { revalidate: config.revalidateSeconds, tags: [`product-${id}`, "products"] }
+        : undefined,
+  });
 }
 
 export async function createProduct(data: ProductRequest): Promise<Product> {
@@ -54,6 +77,18 @@ export async function uploadProductImages(files: File[]): Promise<string[]> {
   if (!files.length) {
     throw new Error("No files selected for upload");
   }
+  const invalidType = files.find((f) => !ALLOWED_IMAGE_TYPES.has(f.type));
+  if (invalidType) {
+    throw new Error(`Unsupported file type for "${invalidType.name}".`);
+  }
+  const oversize = files.find((f) => f.size > MAX_IMAGE_FILE_SIZE_BYTES);
+  if (oversize) {
+    throw new Error(`"${oversize.name}" exceeds 10MB max file size.`);
+  }
+  const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > MAX_IMAGE_REQUEST_SIZE_BYTES) {
+    throw new Error("Total selected files exceed 10MB request limit.");
+  }
   const formData = new FormData();
   files.forEach((f) => formData.append("files", f));
   const BASE_URL =
@@ -65,28 +100,56 @@ export async function uploadProductImages(files: File[]): Promise<string[]> {
     "X-API-Version": "v1",
     "X-Correlation-Id": generateCorrelationId(),
   };
+  const correlationId = headers["X-Correlation-Id"];
   const token = getAccessToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetchWithAuthRetry(url, {
-    method: "POST",
-    headers,
-    body: formData,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  let res: Response;
+  try {
+    res = await fetchWithAuthRetry(url, {
+      method: "POST",
+      headers,
+      body: formData,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError(
+        "Image upload timed out. Please retry with fewer or smaller files.",
+        null,
+        0,
+        correlationId
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   if (!res.ok) {
     const text = await res.text();
     let msg = text || "Upload failed";
-    let correlationId: string | undefined =
+    let responseCorrelationId: string | undefined =
       res.headers.get("X-Correlation-Id") ??
       res.headers.get("x-correlation-id") ??
       undefined;
     try {
       const j = JSON.parse(text);
       msg = j.message ?? j.error ?? text;
-      correlationId = correlationId ?? j.correlationId ?? undefined;
+      responseCorrelationId = responseCorrelationId ?? j.correlationId ?? undefined;
     } catch {
       // ignore
     }
-    throw new ApiError(msg, null, res.status, correlationId);
+    if (res.status === 413) {
+      msg = "Upload too large. Max 10MB per file and 10MB per request.";
+    }
+    throw new ApiError(msg, null, res.status, responseCorrelationId ?? correlationId);
   }
-  return res.json();
+
+  const payload = await res.json();
+  if (Array.isArray(payload) && payload.every((u) => typeof u === "string")) {
+    return payload;
+  }
+  throw new ApiError("Upload succeeded but returned an unexpected response.", null, 502, correlationId);
 }

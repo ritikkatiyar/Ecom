@@ -10,12 +10,14 @@ async function proxy(request: NextRequest, method: string) {
   const url = `${BACKEND}/api/products${request.nextUrl.search}`;
   const headers = new Headers(request.headers);
   headers.delete("host");
+  headers.set("X-API-Version", "v1");
   try {
     const body = method === "POST" ? await request.text() : undefined;
     const res = await fetch(url, {
       method,
       headers,
       body: body || undefined,
+      ...(method === "GET" ? { next: { revalidate: 30, tags: ["products"] } } : {}),
     });
     const text = await res.text();
     return new NextResponse(text, {
@@ -23,6 +25,9 @@ async function proxy(request: NextRequest, method: string) {
       statusText: res.statusText,
       headers: {
         "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+        ...(method === "GET"
+          ? { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" }
+          : {}),
       },
     });
   } catch (err) {

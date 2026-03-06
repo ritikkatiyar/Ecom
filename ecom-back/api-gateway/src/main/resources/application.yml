@@ -88,6 +88,17 @@ spring:
                 fallbackUri: forward:/fallback/search
           metadata:
             response-timeout: 60000
+        - id: review
+          uri: http://localhost:8088
+          predicates:
+            - Path=/api/reviews/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: reviewCircuit
+                fallbackUri: forward:/fallback/review
+          metadata:
+            response-timeout: 60000
 
 server:
   port: 8080
@@ -99,9 +110,9 @@ app:
     rate-limit:
       # redis: try Redis first, fallback to in-memory if Redis unavailable
       # in-memory: use in-memory only (no Redis)
-      mode: redis
-      max-requests: 120
-      window-seconds: 60
+      mode: ${RATE_LIMIT_MODE:redis}
+      max-requests: ${RATE_LIMIT_MAX_REQUESTS:1000}
+      window-seconds: ${RATE_LIMIT_WINDOW_SECONDS:60}
     auth:
       validate-url: http://localhost:8081/api/auth/validate
       validate-timeout-seconds: 15
@@ -159,6 +170,8 @@ resilience4j:
         baseConfig: default
       searchCircuit:
         baseConfig: default
+      reviewCircuit:
+        baseConfig: default
   timelimiter:
     configs:
       default:
@@ -184,6 +197,8 @@ resilience4j:
       paymentCircuit:
         baseConfig: default
       searchCircuit:
+        baseConfig: default
+      reviewCircuit:
         baseConfig: default
 
 logging:

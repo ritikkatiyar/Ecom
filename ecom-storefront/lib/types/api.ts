@@ -15,4 +15,9 @@ export interface ApiRequestConfig extends RequestInit {
   skipAuth?: boolean;
   /** Skip retry on failure */
   skipRetry?: boolean;
+  /** Next.js fetch extensions (SSR/ISR cache control) */
+  next?: {
+    revalidate?: number;
+    tags?: string[];
+  };
 }

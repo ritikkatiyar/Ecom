@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default function RootLayout({
           <AuthProvider>
             <Header />
             {children}
+            <Footer />
           </AuthProvider>
         </QueryProvider>
       </body>

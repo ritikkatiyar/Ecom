@@ -241,7 +241,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: payload
-                  type: varchar(20000)
+                  type: text
                   constraints:
                     nullable: false
               - column:
