@@ -6,6 +6,7 @@ import { addCartItem, clearCart, getCart, removeCartItem } from "@/lib/api/cart"
 import { getOrCreateGuestId } from "@/lib/cartSession";
 import { useAuth } from "@/context/AuthContext";
 import type { CartResponse } from "@/lib/types/cart";
+import type { ApiError } from "@/lib/apiClient";
 
 function parseUserId(userId: string | null): number | null {
   if (!userId) return null;
@@ -22,7 +23,12 @@ function emptyCart(ownerId: string): CartResponse {
   };
 }
 
-export function useCart() {
+export interface UseCartOptions {
+  enabled?: boolean;
+}
+
+export function useCart(options: UseCartOptions = {}) {
+  const { enabled = true } = options;
   const { userId } = useAuth();
   const queryClient = useQueryClient();
 
@@ -39,6 +45,7 @@ export function useCart() {
     queryKey,
     queryFn: () => getCart({ userId: owner.userId, guestId: owner.guestId }),
     staleTime: 10 * 1000,
+    enabled,
   });
 
   const addMutation = useMutation({
@@ -117,7 +124,7 @@ export function useCart() {
     cart: cartQuery.data,
     isLoading: cartQuery.isLoading,
     isFetching: cartQuery.isFetching,
-    error: cartQuery.error,
+    error: cartQuery.error as ApiError | null,
     addItem: addMutation.mutateAsync,
     removeItem: removeMutation.mutateAsync,
     clear: clearMutation.mutateAsync,

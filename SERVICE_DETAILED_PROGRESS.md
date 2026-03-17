@@ -1,8 +1,14 @@
 # Service Detailed Progress
 
-Last updated: 2026-02-21
+Last updated: 2026-03-08
 
 ## Change Log (Dated)
+- 2026-03-08: Auth-service Liquibase rollout: db.changelog-master.yaml, 001-create-auth-tables.yaml (users, refresh_tokens); ddl-auto: validate; liquibase-core dependency.
+- 2026-03-08: Production analytics: Analytics component supports GA4 (NEXT_PUBLIC_GA_MEASUREMENT_ID) and Plausible (NEXT_PUBLIC_PLAUSIBLE_DOMAIN); opt-in when set.
+- 2026-03-08: Onboarding: BetaOnboardingModal (dismissible on first visit via sessionStorage); feedback form at /feedback (mailto, NEXT_PUBLIC_FEEDBACK_EMAIL).
+- 2026-03-08: Feature flags: FlagsContext + getFrontendFlags from gateway `/internal/frontend-flags`; BetaBanner (flag-gated); Admin nav and AdminGuard gated by admin-console-enabled; Next.js rewrite for `/api/internal/frontend-flags` to backend `/internal/frontend-flags`; `/feedback` placeholder page.
+- 2026-03-08: Shop page infinite scroll via `ShopProductGrid` (useInfiniteQuery, IntersectionObserver, 20 items/page). Skeleton loaders and load-more spinner.
+- 2026-03-07: Storefront browse/search/cart flow completion: shop page Add-to-Cart on product cards (`ShopProductCard`, `AddToCartButton` compact variant); ProductForm image upload UX (retry button on failure, auto-dismiss success message after 3.5s); product delete API wired in admin products list.
 - 2026-02-14: Added gateway standardized JSON error payloads and route policy tuning.
 - 2026-02-14: Added gateway route-level circuit breaker with fallback endpoints and Resilience4j policies.
 - 2026-02-14: Added search relevance target threshold evaluation and expanded calibration dataset.

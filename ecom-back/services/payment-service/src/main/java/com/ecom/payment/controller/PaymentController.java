@@ -47,16 +47,25 @@ public class PaymentController {
         this.validator = validator;
     }
 
+    /**
+     * Creates a payment intent for a pending order.
+     */
     @PostMapping("/intents")
     public ResponseEntity<PaymentResponse> createIntent(@Valid @RequestBody CreatePaymentIntentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createIntent(request));
     }
 
+    /**
+     * Returns the current payment record by id.
+     */
     @GetMapping("/{paymentId}")
     public PaymentResponse getPayment(@PathVariable String paymentId) {
         return paymentService.getById(paymentId);
     }
 
+    /**
+     * Accepts signed provider webhook callbacks and updates payment state.
+     */
     @PostMapping("/webhook")
     public WebhookAckResponse webhook(
             @RequestHeader(value = "X-Razorpay-Signature", required = false) String signature,
@@ -72,22 +81,34 @@ public class PaymentController {
         return new WebhookAckResponse(status);
     }
 
+    /**
+     * Lists provider callbacks that failed processing and were sent to dead letter storage.
+     */
     @GetMapping("/provider/dead-letters")
     public List<ProviderDeadLetterResponse> listProviderDeadLetters() {
         return paymentService.listProviderDeadLetters();
     }
 
+    /**
+     * Requeues a failed provider callback for another processing attempt.
+     */
     @PostMapping("/provider/dead-letters/{deadLetterId}/requeue")
     public PaymentResponse requeueProviderDeadLetter(@PathVariable Long deadLetterId) {
         return paymentService.requeueProviderDeadLetter(deadLetterId);
     }
 
+    /**
+     * Enables or disables simulated provider outage mode for testing.
+     */
     @PostMapping("/provider/outage-mode")
-    public Map<String, Object> setProviderOutageMode(@RequestParam boolean enabled) {
+    public Map<String, Object> setProviderOutageMode(@RequestParam(name = "enabled") boolean enabled) {
         boolean current = paymentService.setProviderOutageMode(enabled);
         return Map.of("outageMode", current);
     }
 
+    /**
+     * Returns whether simulated provider outage mode is currently enabled.
+     */
     @GetMapping("/provider/outage-mode")
     public Map<String, Object> getProviderOutageMode() {
         return Map.of("outageMode", paymentService.getProviderOutageMode());

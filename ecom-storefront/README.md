@@ -26,6 +26,9 @@ By default, `/api/*` requests are proxied to `http://localhost:8080` (API Gatewa
 
 ```bash
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
+NEXT_PUBLIC_FEEDBACK_EMAIL=feedback@yoursite.com  # Optional; beta feedback form mailto recipient
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX       # Optional; Google Analytics 4 measurement ID
+NEXT_PUBLIC_PLAUSIBLE_DOMAIN=yoursite.com        # Optional; Plausible Analytics domain
 ```
 
 - Auth: Bearer token, 401 refresh retry (apiClient and fetchWithAuthRetry for image upload).
@@ -43,6 +46,7 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 - `/admin/dashboard` – Admin (protected, ADMIN only)
 - `/unauthorized` – Insufficient role
 - `/collections` – Collections
+- `/feedback` – Beta feedback form (mailto)
 
 ## Design
 

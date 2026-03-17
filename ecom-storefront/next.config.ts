@@ -8,7 +8,13 @@ const nextConfig: NextConfig = {
     const backend =
       process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
     // Auth excluded: app/api/auth/[...path]/route.ts proxies POST correctly.
-    // External rewrites can return 405 for POST.
+    // Gateway serves /internal/* directly (not under /api).
+    const rewrites = [
+      {
+        source: "/api/internal/frontend-flags",
+        destination: `${backend}/internal/frontend-flags`,
+      },
+    ];
     const apiPaths = [
       "products",
       "orders",
@@ -20,10 +26,11 @@ const nextConfig: NextConfig = {
       "notifications",
       "internal",
     ];
-    return apiPaths.map((p) => ({
+    const apiRewrites = apiPaths.map((p) => ({
       source: `/api/${p}/:path*`,
       destination: `${backend}/api/${p}/:path*`,
     }));
+    return [...rewrites, ...apiRewrites];
   },
 };
 

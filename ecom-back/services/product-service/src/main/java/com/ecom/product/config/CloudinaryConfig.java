@@ -1,7 +1,7 @@
 package com.ecom.product.config;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,7 +9,10 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 @Configuration
-@ConditionalOnProperty(name = "cloudinary.cloud-name", matchIfMissing = false)
+@ConditionalOnExpression(
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.cloud-name:}') and " +
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.api-key:}') and " +
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.api-secret:}')")
 public class CloudinaryConfig {
 
     @Value("${cloudinary.cloud-name}")

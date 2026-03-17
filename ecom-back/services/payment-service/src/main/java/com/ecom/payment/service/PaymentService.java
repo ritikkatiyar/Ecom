@@ -54,6 +54,9 @@ public class PaymentService implements PaymentUseCases {
         this.meterRegistry = meterRegistry;
     }
 
+    /**
+     * Creates a payment intent for a reserved order or returns the prior record for the same idempotency key.
+     */
     @Transactional
     public PaymentResponse createIntent(CreatePaymentIntentRequest request) {
         if (request.currency().length() != 3) {
@@ -77,12 +80,18 @@ public class PaymentService implements PaymentUseCases {
         return toResponse(paymentRepository.save(record));
     }
 
+    /**
+     * Reads one payment record by id.
+     */
     @Transactional(readOnly = true)
     public PaymentResponse getById(String paymentId) {
         return toResponse(paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found")));
     }
 
+    /**
+     * Processes a provider webhook exactly once and emits payment-authorized or payment-failed events.
+     */
     @Transactional
     public String handleWebhook(PaymentWebhookRequest request) {
         if (webhookEventRepository.existsById(request.providerEventId())) {
@@ -117,6 +126,9 @@ public class PaymentService implements PaymentUseCases {
         return "ignored";
     }
 
+    /**
+     * Creates a synthetic pending payment record for an order when no payment exists yet.
+     */
     @Transactional
     public void createPendingForOrder(String orderId, Long userId, String currency) {
         paymentRepository.findByOrderId(orderId).ifPresentOrElse(p -> {
@@ -134,6 +146,9 @@ public class PaymentService implements PaymentUseCases {
     }
 
     @Override
+    /**
+     * Returns dead-lettered provider records for operator review.
+     */
     @Transactional(readOnly = true)
     public List<ProviderDeadLetterResponse> listProviderDeadLetters() {
         return deadLetterRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -142,6 +157,9 @@ public class PaymentService implements PaymentUseCases {
     }
 
     @Override
+    /**
+     * Retries one provider dead-letter record and links it to the recreated payment if successful.
+     */
     @Transactional
     public PaymentResponse requeueProviderDeadLetter(Long deadLetterId) {
         ProviderDeadLetterRecord deadLetter = deadLetterRepository.findById(deadLetterId)
@@ -192,6 +210,9 @@ public class PaymentService implements PaymentUseCases {
     }
 
     @Override
+    /**
+     * Switches the simulated provider gateway into or out of outage mode.
+     */
     public boolean setProviderOutageMode(boolean enabled) {
         providerGateway.setOutageMode(enabled);
         meterRegistry.counter("payment.provider.outage.toggle.total", "enabled", String.valueOf(enabled)).increment();
@@ -199,6 +220,9 @@ public class PaymentService implements PaymentUseCases {
     }
 
     @Override
+    /**
+     * Reports the current simulated provider outage flag.
+     */
     public boolean getProviderOutageMode() {
         return providerGateway.isOutageMode();
     }

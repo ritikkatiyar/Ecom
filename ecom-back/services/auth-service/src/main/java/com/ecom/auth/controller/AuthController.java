@@ -34,21 +34,33 @@ public class AuthController {
         this.authService = authService;
     }
 
+    /**
+     * Registers a new user account and returns the initial access and refresh tokens.
+     */
     @PostMapping("/signup")
     public ResponseEntity<TokenResponse> signup(@Valid @RequestBody SignupRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.signup(request));
     }
 
+    /**
+     * Authenticates a user with credentials and returns a fresh token pair.
+     */
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
+    /**
+     * Exchanges a valid refresh token for a new access and refresh token pair.
+     */
     @PostMapping("/refresh")
     public TokenResponse refresh(@Valid @RequestBody RefreshRequest request) {
         return authService.refresh(request);
     }
 
+    /**
+     * Revokes the current access token and optionally blacklists the supplied refresh token.
+     */
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(
@@ -57,6 +69,9 @@ public class AuthController {
         authService.logout(extractBearerToken(authorization), request == null ? null : request.refreshToken());
     }
 
+    /**
+     * Reports whether the supplied bearer access token is still active.
+     */
     @GetMapping("/validate")
     public TokenValidationResponse validate(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
         return new TokenValidationResponse(authService.isAccessTokenActive(extractBearerToken(authorization)));

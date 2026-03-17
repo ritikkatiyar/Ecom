@@ -44,27 +44,42 @@ public class ProductController {
         this.productService = productService;
     }
 
+    /**
+     * Creates a new product record.
+     */
     @PostMapping
     public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
+    /**
+     * Updates an existing product by id.
+     */
     @PutMapping("/{id}")
-    public Product update(@PathVariable String id, @Valid @RequestBody ProductRequest request) {
+    public Product update(@PathVariable("id") String id, @Valid @RequestBody ProductRequest request) {
         return productService.update(id, request);
     }
 
+    /**
+     * Returns a single product by id.
+     */
     @GetMapping("/{id}")
-    public Product get(@PathVariable String id) {
+    public Product get(@PathVariable("id") String id) {
         return productService.get(id);
     }
 
+    /**
+     * Deletes a product by id.
+     */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String id) {
+    public void delete(@PathVariable("id") String id) {
         productService.delete(id);
     }
 
+    /**
+     * Returns a paginated product list with optional category, brand, text, and sort filters.
+     */
     @GetMapping
     public Page<Product> list(
             @RequestParam(name = "category", required = false) String category,

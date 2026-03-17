@@ -90,7 +90,7 @@ export default function AdminInventoryPage() {
                   setSkuUpsert(next);
                 }}
                 placeholder="Type product id or choose suggestion"
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-700"
               />
               <datalist id="inventory-product-options">
                 {productsQuery.data?.content.map((p) => (
@@ -114,7 +114,7 @@ export default function AdminInventoryPage() {
               value={skuLookup}
               onChange={(e) => setSkuLookup(e.target.value)}
               placeholder="Enter SKU"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-700"
             />
           </div>
           <button
@@ -135,7 +135,7 @@ export default function AdminInventoryPage() {
               value={skuUpsert}
               onChange={(e) => setSkuUpsert(e.target.value)}
               placeholder="Enter SKU"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-700"
             />
           </div>
           <div>
@@ -147,7 +147,8 @@ export default function AdminInventoryPage() {
               min={0}
               value={availableQuantity}
               onChange={(e) => setAvailableQuantity(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2"
+              placeholder="Quantity"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-700"
             />
           </div>
           <button

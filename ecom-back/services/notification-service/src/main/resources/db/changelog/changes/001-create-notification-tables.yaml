@@ -1,0 +1,201 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-notification-records
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: notification_records
+      changes:
+        - createTable:
+            tableName: notification_records
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_email
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: varchar(2000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: retry_count
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_error
+                  type: varchar(500)
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: notification_records
+            indexName: idx_notification_user
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: notification_records
+            indexName: idx_notification_status
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 002-create-notification-dead-letters
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: notification_dead_letters
+      changes:
+        - createTable:
+            tableName: notification_dead_letters
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: event_type
+                  type: varchar(64)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_email
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: subject
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: body
+                  type: varchar(2000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: retries
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: varchar(500)
+              - column:
+                  name: source_topic
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            tableName: notification_dead_letters
+            indexName: idx_notification_dlq_event
+            columns:
+              - column:
+                  name: event_id
+        - createIndex:
+            tableName: notification_dead_letters
+            indexName: idx_notification_dlq_status
+            columns:
+              - column:
+                  name: status
+
+  - changeSet:
+      id: 003-create-notification-consumed-events
+      author: codex
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: notification_consumed_events
+      changes:
+        - createTable:
+            tableName: notification_consumed_events
+            columns:
+              - column:
+                  name: event_id
+                  type: varchar(120)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: consumed_at
+                  type: datetime(6)
+                  constraints:
+                    nullable: false

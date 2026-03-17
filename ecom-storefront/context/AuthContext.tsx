@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -32,6 +33,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authVersionRef = useRef(0);
+  const commitAccessToken = useCallback((token: string | null) => {
+    setAccessToken(token);
+    setAccessTokenProvider(() => token);
+  }, []);
 
   const roles = useMemo(() => {
     if (!accessToken) return [];
@@ -55,36 +61,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
       const res = await authApi.refresh();
-      setAccessToken(res.accessToken);
+      commitAccessToken(res.accessToken);
       return true;
     } catch {
-      setAccessToken(null);
+      commitAccessToken(null);
       return false;
     }
-  }, []);
+  }, [commitAccessToken]);
 
   /** Returns new access token for apiClient 401 retry. */
   const handle401 = useCallback(async (): Promise<string | null> => {
     try {
       const res = await authApi.refresh();
-      setAccessToken(res.accessToken);
+      commitAccessToken(res.accessToken);
       return res.accessToken;
     } catch {
-      setAccessToken(null);
+      commitAccessToken(null);
       return null;
     }
-  }, []);
+  }, [commitAccessToken]);
 
   const login = useCallback(async (email: string, password: string): Promise<string[]> => {
     const res = await authApi.login({ email, password });
-    setAccessToken(res.accessToken);
+    authVersionRef.current += 1;
+    commitAccessToken(res.accessToken);
+    setIsLoading(false);
     return getRolesFromToken(res.accessToken);
-  }, []);
+  }, [commitAccessToken]);
 
   const signup = useCallback(async (email: string, password: string, role?: string) => {
     const res = await authApi.signup({ email, password, role });
-    setAccessToken(res.accessToken);
-  }, []);
+    authVersionRef.current += 1;
+    commitAccessToken(res.accessToken);
+    setIsLoading(false);
+  }, [commitAccessToken]);
 
   const logout = useCallback(async () => {
     if (accessToken) {
@@ -94,20 +104,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // ignore - clear client auth state regardless
       }
     }
-    setAccessToken(null);
-  }, [accessToken]);
+    authVersionRef.current += 1;
+    commitAccessToken(null);
+    setIsLoading(false);
+  }, [accessToken, commitAccessToken]);
 
   useEffect(() => {
+    const bootstrapVersion = authVersionRef.current;
     authApi
       .refresh()
-      .then((res) => setAccessToken(res.accessToken))
-      .catch(() => setAccessToken(null))
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  useEffect(() => {
-    setAccessTokenProvider(() => accessToken);
-  }, [accessToken]);
+      .then((res) => {
+        if (authVersionRef.current !== bootstrapVersion) return;
+        commitAccessToken(res.accessToken);
+      })
+      .catch(() => {
+        if (authVersionRef.current !== bootstrapVersion) return;
+        commitAccessToken(null);
+      })
+      .finally(() => {
+        if (authVersionRef.current !== bootstrapVersion) return;
+        setIsLoading(false);
+      });
+  }, [commitAccessToken]);
 
   useEffect(() => {
     setOn401Handler(handle401);

@@ -73,6 +73,12 @@ export async function updateProduct(
   });
 }
 
+export async function deleteProduct(id: string): Promise<void> {
+  await apiClient<void>(`/api/products/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export async function uploadProductImages(files: File[]): Promise<string[]> {
   if (!files.length) {
     throw new Error("No files selected for upload");

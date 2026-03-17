@@ -1,14 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { getProducts } from "@/lib/api/products";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getProducts, deleteProduct } from "@/lib/api/products";
 
 export default function AdminProductsPage() {
+  const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => getProducts({ page: 0, size: 20 }),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    },
+  });
+
+  function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete product "${name}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(id);
+  }
 
   if (isLoading) {
     return (
@@ -25,6 +38,8 @@ export default function AdminProductsPage() {
       </div>
     );
   }
+
+  const deleteError = deleteMutation.error;
 
   return (
     <div>
@@ -75,13 +90,21 @@ export default function AdminProductsPage() {
                       {p.active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-4">
                     <Link
                       href={`/admin/products/${p.id}/edit`}
                       className="text-[#2badee] hover:underline text-sm font-medium"
                     >
                       Edit
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(p.id, p.name)}
+                      disabled={deleteMutation.isPending}
+                      className="text-red-600 hover:underline text-sm font-medium disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -89,6 +112,12 @@ export default function AdminProductsPage() {
           </table>
         </div>
       )}
+
+      {deleteError ? (
+        <p className="mt-4 text-sm text-red-600">
+          {deleteError instanceof Error ? deleteError.message : "Delete failed"}
+        </p>
+      ) : null}
 
       {data && data.totalPages > 1 && (
         <p className="mt-4 text-sm text-slate-500">

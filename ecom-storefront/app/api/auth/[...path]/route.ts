@@ -49,6 +49,16 @@ function clearRefreshCookie(res: NextResponse) {
   });
 }
 
+function buildRedirectErrorResponse(pathStr: string, status: number, location: string | null) {
+  return NextResponse.json(
+    {
+      message: `Unexpected auth redirect while handling /api/auth/${pathStr}`,
+      location,
+    },
+    { status: status >= 300 && status < 400 ? 502 : status }
+  );
+}
+
 // Handle CORS preflight (OPTIONS) - custom headers trigger preflight
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -98,7 +108,19 @@ export async function POST(
       method: "POST",
       headers,
       body: requestBody,
+      redirect: "manual",
     });
+    if (upstream.status >= 300 && upstream.status < 400) {
+      const response = buildRedirectErrorResponse(
+        pathStr,
+        upstream.status,
+        upstream.headers.get("location")
+      );
+      if (pathStr === "logout") {
+        clearRefreshCookie(response);
+      }
+      return response;
+    }
     const text = await upstream.text();
     const parsed = toJsonSafe(text);
     const responsePayload: Record<string, unknown> = parsed ? { ...parsed } : {};
@@ -148,7 +170,10 @@ export async function GET(
   headers.delete("host");
   headers.set("X-API-Version", "v1");
   try {
-    const res = await fetch(url, { method: "GET", headers });
+    const res = await fetch(url, { method: "GET", headers, redirect: "manual" });
+    if (res.status >= 300 && res.status < 400) {
+      return buildRedirectErrorResponse(pathStr, res.status, res.headers.get("location"));
+    }
     const text = await res.text();
     return new NextResponse(text, {
       status: res.status,

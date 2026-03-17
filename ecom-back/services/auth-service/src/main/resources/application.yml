@@ -1,24 +1,12 @@
 spring:
   application:
     name: auth-service
-  profiles:
-    active: mysql-redis-kafka
-  datasource:
-    url: jdbc:mysql://localhost:3306/ecom_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: root
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 2s
-      # Fail fast on Redis unavailability; TokenBlacklistService uses generic fallback
-  kafka:
-    bootstrap-servers: localhost:9092
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   security:
     oauth2:
       client:
@@ -35,16 +23,13 @@ security:
     refresh-token-ttl-days: 14
 
 management:
+  health:
+    redis:
+      enabled: false
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  tracing:
-    sampling:
-      probability: 1.0
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
   endpoint:
     health:
       probes:

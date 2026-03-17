@@ -96,7 +96,7 @@ export default function CheckoutPage() {
     refetchInterval: (q) => {
       const status = q.state.data?.status;
       if (!status) return 3000;
-      if (status === "CONFIRMED" || status === "FAILED" || status === "TIMED_OUT" || status === "CANCELLED") {
+      if (status === "CONFIRMED" || status === "CANCELLED") {
         return false;
       }
       return 3000;
@@ -194,7 +194,7 @@ export default function CheckoutPage() {
               <p className="text-slate-500">Polling every 3s until terminal state.</p>
             </div>
             <div className="mt-4 flex gap-2 text-xs uppercase tracking-widest">
-              {["PAYMENT_PENDING", "CONFIRMED", "FAILED", "TIMED_OUT"].map((s) => (
+              {["PAYMENT_PENDING", "CONFIRMED", "CANCELLED"].map((s) => (
                 <span
                   key={s}
                   className={`rounded-full px-3 py-1 border ${

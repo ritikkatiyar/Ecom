@@ -1,32 +1,37 @@
 {
-  "generatedAt": "2026-03-05T07:32:10.130959+00:00",
+  "generatedAt": "2026-03-10T13:28:27.821195+00:00",
   "baseUrl": "http://localhost:8080",
-  "tags": [
-    "gateway-core"
-  ],
+  "tags": [],
   "excludeTags": [],
-  "total": 3,
-  "passed": 3,
-  "failed": 0,
+  "total": 5,
+  "passed": 0,
+  "failed": 5,
   "skipped": 0,
   "results": [
     {
       "name": "gateway.version.header.enforced",
-      "result": "PASS",
-      "detail": "status=400",
-      "status": 400
+      "result": "FAIL",
+      "detail": "gateway unavailable: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>"
     },
     {
       "name": "gateway.auth.required.orders",
-      "result": "PASS",
-      "detail": "status=401",
-      "status": 401
+      "result": "FAIL",
+      "detail": "gateway unavailable: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>"
     },
     {
       "name": "gateway.auth.required.reviews",
-      "result": "PASS",
-      "detail": "status=401",
-      "status": 401
+      "result": "FAIL",
+      "detail": "gateway unavailable: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>"
+    },
+    {
+      "name": "gateway.products.list.contract",
+      "result": "FAIL",
+      "detail": "gateway unavailable: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>"
+    },
+    {
+      "name": "gateway.search.products.contract",
+      "result": "FAIL",
+      "detail": "gateway unavailable: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>"
     }
   ]
 }

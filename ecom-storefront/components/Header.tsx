@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useFlags } from "@/context/FlagsContext";
 import { useCart } from "@/lib/hooks/useCart";
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, roles, logout } = useAuth();
-  const { cart } = useCart();
+  const { adminConsoleEnabled } = useFlags();
+  const isAdminRoute = pathname.startsWith("/admin");
+  const { cart } = useCart({ enabled: !isAdminRoute });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isAdmin = roles.includes("ADMIN");
+  const showAdmin = isAdmin && adminConsoleEnabled;
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -45,7 +50,7 @@ export function Header() {
             <Link href="/search" className="hover:text-[#2badee] transition-colors">
               Search
             </Link>
-            {isAdmin && (
+            {showAdmin && (
               <Link href="/admin/dashboard" className="hover:text-[#2badee] transition-colors">
                 Admin
               </Link>
@@ -84,15 +89,17 @@ export function Header() {
               Sign In
             </Link>
           )}
-          <Link
-            href="/cart"
-            className="material-symbols-outlined text-slate-700 hover:text-[#2badee] transition-colors relative"
-          >
-            shopping_bag
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#2badee] text-[10px] text-white">
-              {cart?.totalItems ?? 0}
-            </span>
-          </Link>
+          {!isAdminRoute && (
+            <Link
+              href="/cart"
+              className="material-symbols-outlined text-slate-700 hover:text-[#2badee] transition-colors relative"
+            >
+              shopping_bag
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#2badee] text-[10px] text-white">
+                {cart?.totalItems ?? 0}
+              </span>
+            </Link>
+          )}
         </div>
       </div>
     </header>

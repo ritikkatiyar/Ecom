@@ -1,6 +1,6 @@
 # Amazon Lite Phase Completion Checklist
 
-Last updated: 2026-02-21
+Last updated: 2026-03-08
 
 ## Phase 1 - System Design (HLD)
 Status: `Done`
@@ -28,15 +28,15 @@ Status: `In Progress (advanced)`
 - [ ] Final staged/prod rollback drill execution evidence + tuning deltas pending.
 
 ## Phase 4 - Frontend (Next.js Production Style)
-Status: `In Progress (55%)`
+Status: `In Progress (70%)`
 - [x] Frontend kickoff started with beta release scaffolding (feature flags + admin guard baseline).
 - [x] Next.js storefront scaffolded (`ecom-storefront`) with App Router and stitch design system.
 - [x] Core routes: home, shop, products/[id], search, cart, account, collections.
 - [x] Header nav component, API proxy via `NEXT_PUBLIC_BACKEND_URL`.
-- [ ] Wire backend APIs (products, search, cart, auth) to storefront. (Products admin CRUD + image upload done.)
-- [ ] Server/Client component architecture integration with backend contracts.
-- [ ] SSR product pages + infinite scroll + debounced search + optimistic cart.
-- [ ] State/query architecture (React Query/SWR for server state).
+- [x] Wire backend APIs (products, search, cart, auth) to storefront. Products admin CRUD + image upload + delete done; shop Add-to-Cart; image upload retry + auto-dismiss.
+- [x] SSR product pages + debounced search + optimistic cart.
+- [x] Infinite scroll on shop page (useInfiniteQuery + IntersectionObserver).
+- [x] State/query architecture (React Query for server state).
 
 ## Phase 5 - Deployment Architecture
 Status: `In Progress`
@@ -55,7 +55,8 @@ Status: `In Progress`
 Status: `Partially In Progress`
 - [x] Rate limiting and circuit breakers baseline.
 - [x] Idempotency + retry/DLQ on key flows.
-- [ ] Feature flags and blue-green strategy pending.
+- [x] Feature flags (gateway `app.frontend-flags.*`, storefront FlagsContext, BetaBanner, admin-console gating).
+- [ ] Blue-green strategy pending.
 - [ ] Full API version lifecycle policy pending.
 
 ## Phase 8 - Scale Simulation
@@ -67,5 +68,5 @@ Status: `In Progress`
 ## Immediate Next 3 Execution Items
 1. Execute and review scheduled release-gate drill artifacts until `check_release_gate_drill_evidence.py` passes (staging + production non-missing), then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
 2. Schema governance baseline is now enforced via `ecom-back/contracts/events/event-contracts.json` and `check_event_contracts.py`.
-3. Wire ecom-storefront to backend APIs (products/search/cart/auth) and complete browse/search/cart flows.
+3. ~~Wire ecom-storefront to backend APIs (products/search/cart/auth) and complete browse/search/cart flows.~~ Done: browse/search/cart/auth wired; shop Add-to-Cart; product delete; image upload UX (retry, auto-dismiss).
 

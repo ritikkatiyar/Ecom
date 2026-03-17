@@ -1,6 +1,6 @@
 # Storefront Completion Schedule (Stitch-Aligned)
 
-Last updated: 2026-02-26
+Last updated: 2026-03-07
 
 ## Scope Lock
 - Active frontend: `ecom-storefront` only.
@@ -85,7 +85,7 @@ Acceptance:
 Status: `In Progress`
 
 1. Admin products CRUD polish with stitch admin layout. `Done` (baseline)
-2. Image upload flow reliability + validation feedback. `In Progress`
+2. Image upload flow reliability + validation feedback. `Done` (retry on failure, auto-dismiss success)
 3. Admin orders page mapped for read-only first, then actions. `Done` (read-only by user-id lookup per current backend contract)
 4. Admin dashboard operations cards mapped to backend health/payment ops endpoints. `Done`
 5. Admin payment operations page (`/admin/payments`) and system health page (`/admin/system`). `Done`

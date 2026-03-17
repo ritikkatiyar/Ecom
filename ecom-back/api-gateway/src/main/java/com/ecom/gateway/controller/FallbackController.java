@@ -19,6 +19,9 @@ import com.ecom.gateway.filter.CorrelationIdFilter;
 @RequestMapping("/fallback")
 public class FallbackController {
 
+    /**
+     * Returns a uniform 503 payload when a downstream route trips the gateway circuit breaker.
+     */
     @RequestMapping(value = "/{service}", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE})
     public ResponseEntity<Map<String, Object>> serviceFallback(
             @PathVariable("service") String service,

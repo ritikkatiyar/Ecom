@@ -1,24 +1,12 @@
 spring:
   application:
     name: search-service
-  profiles:
-    active: es-kafka
-  elasticsearch:
-    uris: http://localhost:9200
-  kafka:
-    bootstrap-servers: localhost:9092
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  tracing:
-    sampling:
-      probability: 1.0
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
   endpoint:
     health:
       probes:
@@ -35,7 +23,6 @@ springdoc:
 
 app:
   search:
-    product-service-base-url: http://localhost:8083
     relevance:
       target-pass-rate: 85.0
   cleanup:

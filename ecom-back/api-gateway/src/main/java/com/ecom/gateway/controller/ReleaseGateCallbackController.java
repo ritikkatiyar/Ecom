@@ -21,6 +21,9 @@ public class ReleaseGateCallbackController {
         this.releaseGateMetricsService = releaseGateMetricsService;
     }
 
+    /**
+     * Records release-gate callback events emitted by deployment automation.
+     */
     @PostMapping("/callbacks")
     public ResponseEntity<Map<String, Object>> recordCallback(@RequestBody ReleaseGateCallbackRequest request) {
         if (isBlank(request.event()) || isBlank(request.environment()) || isBlank(request.status())) {

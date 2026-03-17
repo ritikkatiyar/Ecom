@@ -35,6 +35,9 @@ public class InventoryController {
         this.inventoryService = inventoryService;
     }
 
+    /**
+     * Creates or updates the stock record for a SKU.
+     */
     @PostMapping("/stock")
     public ResponseEntity<StockResponse> upsertStock(@Valid @RequestBody StockUpsertRequest request) {
         log.info("Inventory upsert requested sku={} availableQuantity={}", request.sku(), request.availableQuantity());
@@ -44,6 +47,9 @@ public class InventoryController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Returns the available and reserved quantities for a SKU.
+     */
     @GetMapping("/stock/{sku}")
     public StockResponse getStock(@PathVariable String sku) {
         log.info("Inventory lookup requested sku={}", sku);
@@ -53,16 +59,25 @@ public class InventoryController {
         return response;
     }
 
+    /**
+     * Reserves stock for an order before payment is finalized.
+     */
     @PostMapping("/reserve")
     public StockResponse reserve(@Valid @RequestBody ReservationRequest request) {
         return inventoryService.reserve(request);
     }
 
+    /**
+     * Releases a previously reserved stock allocation back to available inventory.
+     */
     @PostMapping("/release")
     public StockResponse release(@Valid @RequestBody ReservationActionRequest request) {
         return inventoryService.release(request);
     }
 
+    /**
+     * Confirms a reservation after payment succeeds.
+     */
     @PostMapping("/confirm")
     public StockResponse confirm(@Valid @RequestBody ReservationActionRequest request) {
         return inventoryService.confirm(request);

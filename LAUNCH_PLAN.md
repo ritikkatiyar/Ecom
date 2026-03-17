@@ -1,20 +1,20 @@
 # Public Beta Launch Plan
 
-Last updated: 2026-02-21
+Last updated: 2026-03-08
 
 ## Goal
 Release a public beta quickly, get real traffic, and continue hardening in parallel.
 
 ## Track A - Frontend Release (ASAP)
-1. Day 0-1 ✅ (partial)
+1. Day 0-1 ✅
 - [x] Ship beta-ready frontend shell: `ecom-storefront` (Next.js) with stitch design.
 - [x] Routes: home, shop, products/[id], search, cart, account, collections.
-- [ ] Wire product/search/cart core APIs through gateway. (Products admin CRUD + image upload wired.)
-- [ ] Add feature flags and admin route guard.
+- [x] Wire product/search/cart core APIs through gateway.
+- [x] Add feature flags and admin route guard. Flags from `GET /internal/frontend-flags` (beta-banner-enabled, admin-console-enabled). BetaBanner + Admin link/guard gated by flags.
 
 2. Day 2-3
-- Add onboarding/beta messaging and feedback capture.
-- Enable production analytics + funnel tracking.
+- [x] Add onboarding/beta messaging and feedback capture. BetaOnboardingModal (dismissible, sessionStorage); feedback form (name, email, message) with mailto; NEXT_PUBLIC_FEEDBACK_EMAIL for custom recipient.
+- [x] Enable production analytics + funnel tracking. Analytics component supports GA4 (`NEXT_PUBLIC_GA_MEASUREMENT_ID`) and Plausible (`NEXT_PUBLIC_PLAUSIBLE_DOMAIN`); opt-in when env vars are set.
 
 3. Day 4-5
 - Public beta rollout with controlled traffic.

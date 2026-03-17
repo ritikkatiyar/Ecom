@@ -25,27 +25,42 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Lists notifications for a given user.
+     */
     @GetMapping
-    public List<NotificationResponse> listByUser(@RequestParam Long userId) {
+    public List<NotificationResponse> listByUser(@RequestParam(name = "userId") Long userId) {
         return notificationService.listByUser(userId);
     }
 
+    /**
+     * Lists notifications that failed delivery but have not been reprocessed yet.
+     */
     @GetMapping("/failed")
     public List<NotificationResponse> failed() {
         return notificationService.listFailed();
     }
 
+    /**
+     * Retries all notifications currently marked as failed.
+     */
     @PostMapping("/retry-failed")
     public ResponseEntity<String> retryFailed() {
         int retried = notificationService.retryFailed();
         return ResponseEntity.ok("Retried notifications: " + retried);
     }
 
+    /**
+     * Returns dead-lettered notification events for inspection.
+     */
     @GetMapping("/dead-letters")
     public List<NotificationDeadLetterResponse> deadLetters() {
         return notificationService.listDeadLetters();
     }
 
+    /**
+     * Requeues a dead-lettered notification event.
+     */
     @PostMapping("/dead-letters/{id}/requeue")
     public ResponseEntity<String> requeueDeadLetter(@PathVariable Long id) {
         boolean requeued = notificationService.requeueDeadLetter(id);

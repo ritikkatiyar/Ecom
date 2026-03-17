@@ -34,6 +34,9 @@ public class InventoryService implements InventoryUseCases {
         this.lockService = lockService;
     }
 
+    /**
+     * Creates or updates the stock ledger row for a SKU.
+     */
     @Transactional
     public StockResponse upsertStock(StockUpsertRequest request) {
         InventoryStock stock = stockRepository.findBySku(request.sku()).orElseGet(InventoryStock::new);
@@ -46,6 +49,9 @@ public class InventoryService implements InventoryUseCases {
         return toResponse(saved);
     }
 
+    /**
+     * Reads the current stock ledger row for one SKU.
+     */
     @Transactional(readOnly = true)
     public StockResponse getStock(String sku) {
         InventoryStock stock = stockRepository.findBySku(sku)
@@ -53,6 +59,9 @@ public class InventoryService implements InventoryUseCases {
         return toResponse(stock);
     }
 
+    /**
+     * Atomically reserves stock for one reservation id by locking the SKU row and decrementing available quantity.
+     */
     @Transactional
     public StockResponse reserve(ReservationRequest request) {
         if (!lockService.acquire(request.sku())) {
@@ -91,6 +100,9 @@ public class InventoryService implements InventoryUseCases {
         }
     }
 
+    /**
+     * Releases one reservation and restores its quantity to available stock.
+     */
     @Transactional
     public StockResponse release(ReservationActionRequest request) {
         InventoryReservation reservation = reservationRepository.findById(request.reservationId())
@@ -121,6 +133,9 @@ public class InventoryService implements InventoryUseCases {
         }
     }
 
+    /**
+     * Confirms one reservation so the reserved quantity becomes a permanent deduction.
+     */
     @Transactional
     public StockResponse confirm(ReservationActionRequest request) {
         InventoryReservation reservation = reservationRepository.findById(request.reservationId())
@@ -151,6 +166,9 @@ public class InventoryService implements InventoryUseCases {
     }
 
     @Override
+    /**
+     * Reserves every order item and rolls back already-made reservations if any SKU fails.
+     */
     @Transactional
     public void reserveForOrder(String orderId, List<OrderItemReservation> items, int ttlMinutes) {
         if (orderId == null || orderId.isBlank()) {
@@ -191,6 +209,9 @@ public class InventoryService implements InventoryUseCases {
     }
 
     @Override
+    /**
+     * Releases all reservations belonging to an order.
+     */
     @Transactional
     public void releaseForOrder(String orderId) {
         for (InventoryReservation reservation : findOrderReservations(orderId)) {
@@ -199,6 +220,9 @@ public class InventoryService implements InventoryUseCases {
     }
 
     @Override
+    /**
+     * Confirms all reservations belonging to an order.
+     */
     @Transactional
     public void confirmForOrder(String orderId) {
         for (InventoryReservation reservation : findOrderReservations(orderId)) {
@@ -207,6 +231,9 @@ public class InventoryService implements InventoryUseCases {
     }
 
     @Override
+    /**
+     * Periodically frees expired reservations to prevent abandoned checkouts from blocking stock.
+     */
     @Transactional
     public int releaseExpiredReservations(Instant cutoff, int batchSize) {
         int safeBatchSize = Math.max(1, Math.min(batchSize, 500));

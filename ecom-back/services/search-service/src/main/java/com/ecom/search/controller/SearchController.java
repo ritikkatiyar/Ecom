@@ -37,55 +37,79 @@ public class SearchController {
         this.searchService = searchService;
     }
 
+    /**
+     * Indexes or updates a single product document in the search backend.
+     */
     @PostMapping("/index/products")
     public ResponseEntity<ProductSearchResponse> upsertProduct(@Valid @RequestBody ProductIndexRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(searchService.upsertProduct(request));
     }
 
+    /**
+     * Indexes or updates multiple product documents in one request.
+     */
     @PostMapping("/index/products/bulk")
     public ResponseEntity<List<ProductSearchResponse>> bulkUpsert(@Valid @RequestBody List<ProductIndexRequest> requests) {
         return ResponseEntity.status(HttpStatus.CREATED).body(searchService.bulkUpsert(requests));
     }
 
+    /**
+     * Removes a product document from the search index.
+     */
     @DeleteMapping("/index/products/{productId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteProduct(@PathVariable String productId) {
         searchService.deleteProduct(productId);
     }
 
+    /**
+     * Searches indexed products with filters, pagination, and sorting.
+     */
     @GetMapping("/products")
     public ProductSearchPageResponse search(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String brand,
-            @RequestParam(defaultValue = "true") boolean activeOnly,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "score") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "brand", required = false) String brand,
+            @RequestParam(name = "activeOnly", defaultValue = "true") boolean activeOnly,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "20") int size,
+            @RequestParam(name = "sortBy", defaultValue = "score") String sortBy,
+            @RequestParam(name = "direction", defaultValue = "desc") String direction) {
         return searchService.search(q, category, brand, activeOnly, page, size, sortBy, direction);
     }
 
+    /**
+     * Returns autocomplete suggestions for a partial product query.
+     */
     @GetMapping("/autocomplete")
     public List<String> autocomplete(
-            @RequestParam String q,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(name = "q") String q,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         return searchService.autocomplete(q, size);
     }
 
+    /**
+     * Rebuilds the product search index from product-service data.
+     */
     @PostMapping("/reindex/products")
     public ReindexResponse reindexProducts(
-            @RequestParam(defaultValue = "true") boolean purgeFirst,
-            @RequestParam(defaultValue = "200") int pageSize) {
+            @RequestParam(name = "purgeFirst", defaultValue = "true") boolean purgeFirst,
+            @RequestParam(name = "pageSize", defaultValue = "200") int pageSize) {
         return searchService.reindexFromProductService(purgeFirst, pageSize);
     }
 
+    /**
+     * Runs the offline relevance evaluation dataset and returns quality metrics.
+     */
     @GetMapping("/admin/relevance/evaluate")
     public RelevanceEvaluationResponse evaluateRelevance(
             @RequestParam(name = "topN", defaultValue = "5") int topN) {
         return searchService.evaluateRelevanceDataset(topN);
     }
 
+    /**
+     * Reports coverage and integrity checks for the relevance evaluation dataset.
+     */
     @GetMapping("/admin/relevance/dataset/health")
     public RelevanceDatasetHealthResponse evaluateRelevanceDatasetHealth() {
         return searchService.evaluateRelevanceDatasetHealth();

@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
+import { FlagsProvider } from "@/context/FlagsContext";
+import { Analytics } from "@/components/Analytics";
+import { BetaBanner } from "@/components/BetaBanner";
+import { BetaOnboardingModal } from "@/components/BetaOnboardingModal";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -37,12 +41,17 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${newsreader.variable} antialiased bg-background text-slate-900`}
       >
+        <Analytics />
         <QueryProvider>
-          <AuthProvider>
-            <Header />
-            {children}
-            <Footer />
-          </AuthProvider>
+          <FlagsProvider>
+            <AuthProvider>
+              <BetaBanner />
+              <BetaOnboardingModal />
+              <Header />
+              {children}
+              <Footer />
+            </AuthProvider>
+          </FlagsProvider>
         </QueryProvider>
       </body>
     </html>

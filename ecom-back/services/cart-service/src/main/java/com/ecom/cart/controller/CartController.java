@@ -32,6 +32,9 @@ public class CartController {
         this.cartUseCases = cartUseCases;
     }
 
+    /**
+     * Adds or increments an item in the cart owned by a user or guest session.
+     */
     @PostMapping("/items")
     public ResponseEntity<CartResponse> addItem(
             @Valid @RequestBody CartItemRequest request,
@@ -45,6 +48,9 @@ public class CartController {
         return ResponseEntity.status(HttpStatus.CREATED).body(cartUseCases.addItem(ownerScopedRequest));
     }
 
+    /**
+     * Returns the current cart snapshot for the given user or guest.
+     */
     @GetMapping
     public CartResponse getCart(
             @RequestParam(name = "userId", required = false) Long userId,
@@ -52,6 +58,9 @@ public class CartController {
         return cartUseCases.getCart(userId, guestId);
     }
 
+    /**
+     * Removes a single product from the cart.
+     */
     @DeleteMapping("/items/{productId}")
     public CartResponse removeItem(
             @PathVariable String productId,
@@ -60,6 +69,9 @@ public class CartController {
         return cartUseCases.removeItem(userId, guestId, productId);
     }
 
+    /**
+     * Clears every item from the cart owned by a user or guest.
+     */
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void clearCart(
@@ -68,6 +80,9 @@ public class CartController {
         cartUseCases.clearCart(userId, guestId);
     }
 
+    /**
+     * Merges a guest cart into a signed-in user's cart.
+     */
     @PostMapping("/merge")
     public CartResponse merge(@Valid @RequestBody MergeCartRequest request) {
         return cartUseCases.merge(request);

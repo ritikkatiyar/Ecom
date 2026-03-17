@@ -37,16 +37,25 @@ public class UserController {
         this.userUseCases = userUseCases;
     }
 
+    /**
+     * Creates or updates the profile details for a user.
+     */
     @PutMapping("/{userId}/profile")
     public UserProfileResponse upsertProfile(@PathVariable Long userId, @Valid @RequestBody UpsertUserProfileRequest request) {
         return userUseCases.upsertProfile(userId, request);
     }
 
+    /**
+     * Returns the profile details for a user.
+     */
     @GetMapping("/{userId}/profile")
     public UserProfileResponse getProfile(@PathVariable Long userId) {
         return userUseCases.getProfile(userId);
     }
 
+    /**
+     * Creates or updates persisted user preferences.
+     */
     @PutMapping("/{userId}/preferences")
     public UserPreferencesResponse upsertPreferences(
             @PathVariable Long userId,
@@ -54,21 +63,33 @@ public class UserController {
         return userUseCases.upsertPreferences(userId, request);
     }
 
+    /**
+     * Returns the stored preferences for a user.
+     */
     @GetMapping("/{userId}/preferences")
     public UserPreferencesResponse getPreferences(@PathVariable Long userId) {
         return userUseCases.getPreferences(userId);
     }
 
+    /**
+     * Adds a new address to the user's saved address book.
+     */
     @PostMapping("/{userId}/addresses")
     public ResponseEntity<AddressResponse> addAddress(@PathVariable Long userId, @Valid @RequestBody AddressRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userUseCases.addAddress(userId, request));
     }
 
+    /**
+     * Lists all saved addresses for a user.
+     */
     @GetMapping("/{userId}/addresses")
     public List<AddressResponse> listAddresses(@PathVariable Long userId) {
         return userUseCases.listAddresses(userId);
     }
 
+    /**
+     * Updates one saved address for a user.
+     */
     @PutMapping("/{userId}/addresses/{addressId}")
     public AddressResponse updateAddress(
             @PathVariable Long userId,
@@ -77,11 +98,17 @@ public class UserController {
         return userUseCases.updateAddress(userId, addressId, request);
     }
 
+    /**
+     * Marks one saved address as the default shipping or billing address.
+     */
     @PostMapping("/{userId}/addresses/{addressId}/default")
     public AddressResponse setDefaultAddress(@PathVariable Long userId, @PathVariable Long addressId) {
         return userUseCases.setDefaultAddress(userId, addressId);
     }
 
+    /**
+     * Deletes one saved address from the user's address book.
+     */
     @DeleteMapping("/{userId}/addresses/{addressId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteAddress(@PathVariable Long userId, @PathVariable Long addressId) {

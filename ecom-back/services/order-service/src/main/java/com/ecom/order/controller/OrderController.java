@@ -31,37 +31,58 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    /**
+     * Creates a new order and writes the initial saga event through the outbox.
+     */
     @PostMapping
     public ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
     }
 
+    /**
+     * Returns a single order by id.
+     */
     @GetMapping("/{orderId}")
     public OrderResponse get(@PathVariable String orderId) {
         return orderService.getOrder(orderId);
     }
 
+    /**
+     * Lists all orders placed by a given user.
+     */
     @GetMapping
-    public List<OrderResponse> list(@RequestParam Long userId) {
+    public List<OrderResponse> list(@RequestParam(name = "userId") Long userId) {
         return orderService.listOrders(userId);
     }
 
+    /**
+     * Cancels an order if its current state still allows cancellation.
+     */
     @PostMapping("/{orderId}/cancel")
     public OrderResponse cancel(@PathVariable String orderId) {
         return orderService.cancelOrder(orderId);
     }
 
+    /**
+     * Marks an order as confirmed after the checkout flow completes.
+     */
     @PostMapping("/{orderId}/confirm")
     public OrderResponse confirm(@PathVariable String orderId) {
         return orderService.confirmOrder(orderId);
     }
 
+    /**
+     * Triggers a manual sweep that cancels orders whose saga deadline has expired.
+     */
     @PostMapping("/admin/saga/timeouts/run")
     public ResponseEntity<String> runTimeoutSweep() {
         int timedOut = orderService.markTimedOutOrders();
         return ResponseEntity.ok("Timed-out orders marked cancelled: " + timedOut);
     }
 
+    /**
+     * Resets failed outbox events back to pending so the publisher can retry them.
+     */
     @PostMapping("/admin/outbox/replay-failed")
     public ResponseEntity<String> replayFailedOutbox() {
         int replayed = orderService.replayFailedOutboxEvents();

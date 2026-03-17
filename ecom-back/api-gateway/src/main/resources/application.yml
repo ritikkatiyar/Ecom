@@ -1,18 +1,11 @@
 spring:
   application:
     name: api-gateway
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      # Short timeouts: fail fast on Redis unavailability so rate limit filter falls back to in-memory
-      timeout: 2s
-      connect-timeout: 2s
   cloud:
     gateway:
       routes:
         - id: auth
-          uri: http://localhost:8081
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
           predicates:
             - Path=/api/auth/**
           filters:
@@ -23,7 +16,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: product
-          uri: http://localhost:8083
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8083}
           predicates:
             - Path=/api/products/**
           filters:
@@ -34,7 +27,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: inventory
-          uri: http://localhost:8084
+          uri: ${INVENTORY_SERVICE_URI:http://localhost:8084}
           predicates:
             - Path=/api/inventory/**
           filters:
@@ -45,7 +38,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: cart
-          uri: http://localhost:8085
+          uri: ${CART_SERVICE_URI:http://localhost:8085}
           predicates:
             - Path=/api/cart/**
           filters:
@@ -56,7 +49,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: order
-          uri: http://localhost:8086
+          uri: ${ORDER_SERVICE_URI:http://localhost:8086}
           predicates:
             - Path=/api/orders/**
           filters:
@@ -67,7 +60,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: payment
-          uri: http://localhost:8087
+          uri: ${PAYMENT_SERVICE_URI:http://localhost:8087}
           predicates:
             - Path=/api/payments/**
           filters:
@@ -78,7 +71,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: search
-          uri: http://localhost:8089
+          uri: ${SEARCH_SERVICE_URI:http://localhost:8089}
           predicates:
             - Path=/api/search/**
           filters:
@@ -89,7 +82,7 @@ spring:
           metadata:
             response-timeout: 60000
         - id: review
-          uri: http://localhost:8088
+          uri: ${REVIEW_SERVICE_URI:http://localhost:8088}
           predicates:
             - Path=/api/reviews/**
           filters:
@@ -114,23 +107,20 @@ app:
       max-requests: ${RATE_LIMIT_MAX_REQUESTS:1000}
       window-seconds: ${RATE_LIMIT_WINDOW_SECONDS:60}
     auth:
-      validate-url: http://localhost:8081/api/auth/validate
+      validate-url: ${AUTH_VALIDATE_URL:http://localhost:8081/api/auth/validate}
       validate-timeout-seconds: 15
   frontend-flags:
     beta-banner-enabled: true
     admin-console-enabled: false
 
 management:
+  health:
+    redis:
+      enabled: false
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  tracing:
-    sampling:
-      probability: 1.0
-  zipkin:
-    tracing:
-      endpoint: http://localhost:9411/api/v2/spans
 
 resilience4j:
   circuitbreaker:

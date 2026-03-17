@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { ApiError } from "@/lib/apiClient";
 import { uploadProductImages } from "@/lib/api/products";
@@ -42,6 +42,12 @@ export function ProductForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadInfo, setUploadInfo] = useState<string | null>(null);
+  const lastSelectedFilesRef = useRef<File[] | null>(null);
+
+  const clearUploadState = useCallback(() => {
+    setUploadError(null);
+    setUploadInfo(null);
+  }, []);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -85,10 +91,13 @@ export function ProductForm({
     setUploadError(null);
     setUploadInfo(`Uploading ${selected.length} image(s)...`);
     setUploading(true);
+    lastSelectedFilesRef.current = selected;
     try {
       const urls = await uploadProductImages(selected);
       setImageUrls((prev) => Array.from(new Set([...prev, ...urls])));
       setUploadInfo(`Uploaded ${urls.length} image(s) successfully.`);
+      lastSelectedFilesRef.current = null;
+      setTimeout(clearUploadState, 3500);
     } catch (err) {
       if (err instanceof ApiError) {
         const cid = err.correlationId ? ` (Correlation ID: ${err.correlationId})` : "";
@@ -100,6 +109,34 @@ export function ProductForm({
     } finally {
       setUploading(false);
       e.target.value = "";
+    }
+  }
+
+  async function handleRetryUpload() {
+    const files = lastSelectedFilesRef.current;
+    if (!files?.length) {
+      setUploadError("No files to retry. Please select images again.");
+      return;
+    }
+    setUploadError(null);
+    setUploadInfo(`Retrying upload of ${files.length} image(s)...`);
+    setUploading(true);
+    try {
+      const urls = await uploadProductImages(files);
+      setImageUrls((prev) => Array.from(new Set([...prev, ...urls])));
+      setUploadInfo(`Uploaded ${urls.length} image(s) successfully.`);
+      lastSelectedFilesRef.current = null;
+      setTimeout(clearUploadState, 3500);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        const cid = err.correlationId ? ` (Correlation ID: ${err.correlationId})` : "";
+        setUploadError(`${err.message}${cid}`);
+      } else {
+        setUploadError(err instanceof Error ? err.message : "Upload failed");
+      }
+      setUploadInfo(null);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -143,8 +180,16 @@ export function ProductForm({
         <div className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <p>{uploadError}</p>
           <p className="mt-1 text-xs">
-            Retry upload. If this persists, share the correlation ID for backend tracing.
+            If this persists, share the correlation ID for backend tracing.
           </p>
+          <button
+            type="button"
+            onClick={handleRetryUpload}
+            disabled={uploading}
+            className="mt-2 rounded-lg border border-amber-600 px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+          >
+            {uploading ? "Retrying..." : "Retry upload"}
+          </button>
         </div>
       )}
 

@@ -36,6 +36,9 @@ public class ReviewController {
         this.reviewUseCases = reviewUseCases;
     }
 
+    /**
+     * Creates a product review on behalf of a user.
+     */
     @PostMapping
     public ResponseEntity<ReviewResponse> createReview(
             @RequestParam(name = "userId") Long userId,
@@ -43,6 +46,9 @@ public class ReviewController {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewUseCases.createReview(userId, request));
     }
 
+    /**
+     * Updates an existing review owned by the requesting user.
+     */
     @PutMapping("/{reviewId}")
     public ReviewResponse updateReview(
             @PathVariable Long reviewId,
@@ -51,17 +57,26 @@ public class ReviewController {
         return reviewUseCases.updateReview(userId, reviewId, request);
     }
 
+    /**
+     * Deletes a review owned by the requesting user.
+     */
     @DeleteMapping("/{reviewId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteReview(@PathVariable Long reviewId, @RequestParam(name = "userId") Long userId) {
         reviewUseCases.deleteReview(userId, reviewId);
     }
 
+    /**
+     * Returns a single review by id.
+     */
     @GetMapping("/{reviewId}")
     public ReviewResponse getReview(@PathVariable Long reviewId) {
         return reviewUseCases.getReview(reviewId);
     }
 
+    /**
+     * Lists reviews for a product, optionally including pending moderation entries.
+     */
     @GetMapping
     public List<ReviewResponse> listProductReviews(
             @RequestParam(name = "productId") String productId,
@@ -69,11 +84,17 @@ public class ReviewController {
         return reviewUseCases.listProductReviews(productId, includePending);
     }
 
+    /**
+     * Lists every review authored by a specific user.
+     */
     @GetMapping("/by-user")
     public List<ReviewResponse> listUserReviews(@RequestParam(name = "userId") Long userId) {
         return reviewUseCases.listUserReviews(userId);
     }
 
+    /**
+     * Applies a moderation decision to a review.
+     */
     @PostMapping("/{reviewId}/moderate")
     public ReviewResponse moderateReview(
             @PathVariable Long reviewId,

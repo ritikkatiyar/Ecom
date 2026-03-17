@@ -17,6 +17,9 @@ public class FrontendFlagsController {
     @Value("${app.frontend-flags.admin-console-enabled:false}")
     private boolean adminConsoleEnabled;
 
+    /**
+     * Exposes frontend feature flags that the storefront can poll at runtime.
+     */
     @GetMapping
     public Map<String, Object> getFlags() {
         return Map.of(

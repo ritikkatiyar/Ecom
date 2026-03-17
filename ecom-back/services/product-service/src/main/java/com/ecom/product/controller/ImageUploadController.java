@@ -30,6 +30,9 @@ public class ImageUploadController {
         this.imageUploadService = imageUploadService;
     }
 
+    /**
+     * Uploads one or more product images and returns their accessible URLs.
+     */
     @PostMapping("/images")
     public ResponseEntity<List<String>> uploadImages(@RequestParam("files") MultipartFile[] files) {
         log.info("uploadImages invoked fileCount={}", files != null ? files.length : 0);

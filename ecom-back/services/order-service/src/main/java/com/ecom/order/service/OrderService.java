@@ -5,6 +5,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,6 +32,7 @@ public class OrderService implements OrderUseCases {
     private final OrderItemCodec orderItemCodec;
     private final OrderResponseMapper orderResponseMapper;
     private final OrderEventPublisher orderEventPublisher;
+    private final InventoryReservationClient inventoryReservationClient;
     private final int paymentTimeoutMinutes;
     private final Counter timeoutCounter;
     private final Counter outboxReplayCounter;
@@ -41,6 +43,7 @@ public class OrderService implements OrderUseCases {
             OrderItemCodec orderItemCodec,
             OrderResponseMapper orderResponseMapper,
             OrderEventPublisher orderEventPublisher,
+            InventoryReservationClient inventoryReservationClient,
             MeterRegistry meterRegistry,
             @Value("${app.saga.payment-timeout-minutes:15}") int paymentTimeoutMinutes) {
         this.orderRepository = orderRepository;
@@ -48,14 +51,18 @@ public class OrderService implements OrderUseCases {
         this.orderItemCodec = orderItemCodec;
         this.orderResponseMapper = orderResponseMapper;
         this.orderEventPublisher = orderEventPublisher;
+        this.inventoryReservationClient = inventoryReservationClient;
         this.paymentTimeoutMinutes = paymentTimeoutMinutes;
         this.timeoutCounter = meterRegistry.counter("order.saga.timeout.total");
         this.outboxReplayCounter = meterRegistry.counter("order.outbox.replay.total");
         Gauge.builder("order.outbox.failed.records", outboxEventRepository,
-                        repo -> repo.countByStatus(OutboxStatus.FAILED))
+                repo -> repo.countByStatus(OutboxStatus.FAILED))
                 .register(meterRegistry);
     }
 
+    /**
+     * Reserves inventory synchronously, persists the order in PAYMENT_PENDING, and emits order.created.
+     */
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         validateCurrency(request.currency());
@@ -65,32 +72,42 @@ public class OrderService implements OrderUseCases {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        String orderId = "ord_" + UUID.randomUUID();
+        inventoryReservationClient.reserve(orderId, request.items());
+
         OrderRecord order = new OrderRecord();
+        order.setId(orderId);
         order.setUserId(request.userId());
         order.setCurrency(request.currency().toUpperCase());
-        order.setStatus(OrderStatus.CREATED);
+        order.setStatus(OrderStatus.PAYMENT_PENDING);
         order.setTotalAmount(total);
         order.setItemsJson(orderItemCodec.writeItems(request.items()));
 
         order = orderRepository.save(order);
         orderEventPublisher.publishOrderCreated(order, request.items());
 
-        order.setStatus(OrderStatus.PAYMENT_PENDING);
-        order = orderRepository.save(order);
-
         return toResponse(order);
     }
 
+    /**
+     * Loads one order by id for polling or detail views.
+     */
     @Transactional(readOnly = true)
     public OrderResponse getOrder(String orderId) {
         return toResponse(fetch(orderId));
     }
 
+    /**
+     * Returns all orders for a user sorted by newest first.
+     */
     @Transactional(readOnly = true)
     public List<OrderResponse> listOrders(Long userId) {
         return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * Cancels an order that has not reached a final successful state and emits timeout-style release flow.
+     */
     @Transactional
     public OrderResponse cancelOrder(String orderId) {
         OrderRecord order = fetch(orderId);
@@ -98,9 +115,14 @@ public class OrderService implements OrderUseCases {
             throw new IllegalArgumentException("Order cannot be cancelled in state " + order.getStatus());
         }
         order.setStatus(OrderStatus.CANCELLED);
-        return toResponse(orderRepository.save(order));
+        order = orderRepository.save(order);
+        orderEventPublisher.publishOrderTimedOut(order);
+        return toResponse(order);
     }
 
+    /**
+     * Confirms an order manually while it is still awaiting completion.
+     */
     @Transactional
     public OrderResponse confirmOrder(String orderId) {
         OrderRecord order = fetch(orderId);
@@ -111,6 +133,9 @@ public class OrderService implements OrderUseCases {
         return toResponse(orderRepository.save(order));
     }
 
+    /**
+     * Finalizes the order after payment authorization succeeds.
+     */
     @Transactional
     public void markPaymentAuthorized(String orderId) {
         OrderRecord order = fetch(orderId);
@@ -121,6 +146,9 @@ public class OrderService implements OrderUseCases {
         orderRepository.save(order);
     }
 
+    /**
+     * Cancels the order when payment fails, unless it already reached a final state.
+     */
     @Transactional
     public void markPaymentFailed(String orderId) {
         OrderRecord order = fetch(orderId);
@@ -135,6 +163,9 @@ public class OrderService implements OrderUseCases {
     }
 
     @Override
+    /**
+     * Sweeps expired payment-pending orders and emits release events for reserved inventory.
+     */
     @Transactional
     public int markTimedOutOrders() {
         Instant deadline = Instant.now().minus(paymentTimeoutMinutes, ChronoUnit.MINUTES);
@@ -156,6 +187,9 @@ public class OrderService implements OrderUseCases {
     }
 
     @Override
+    /**
+     * Requeues failed outbox rows for scheduled republishing.
+     */
     @Transactional
     public int replayFailedOutboxEvents() {
         List<com.ecom.order.entity.OutboxEventRecord> failed =

@@ -216,6 +216,10 @@ export async function apiClient<T>(
     throw new ApiError(message, payload, res.status, correlationId);
   }
 
+  if (res.status === 204) {
+    return undefined as unknown as T;
+  }
+
   const contentType = res.headers.get("Content-Type") ?? "";
   if (contentType.includes("application/json")) {
     return res.json() as Promise<T>;
