@@ -13,7 +13,7 @@ Use a VS Code terminal running as **Administrator** and launch with `ExecutionPo
 ```
 
 This now starts the lighter day-to-day stack by default:
-- Infra: MySQL, MongoDB, Kafka (KRaft mode, no ZooKeeper)
+- Infra: MySQL, Kafka (KRaft mode, no ZooKeeper)
 - Apps: storefront, gateway, auth, user, product, inventory, cart
 - Not started unless requested: Redis, order, payment, review, notification, Kafka UI, Elasticsearch, `search-service`, Zipkin, Prometheus, Alertmanager, Grafana
 
@@ -24,8 +24,22 @@ Why this is the default:
 - Cart and inventory now have in-memory fallback for local development when Redis is not running.
 - Kafka now runs in single-node KRaft mode locally, so ZooKeeper is no longer part of the dev stack.
 - Kafka UI is available as an optional container on `http://127.0.0.1:8091`.
-- MongoDB for the Docker dev stack is exposed on `127.0.0.1:27018` to avoid conflicts with any locally installed MongoDB on `27017`.
-- If you still see MongoDB on `127.0.0.1:27017`, that is your local host MongoDB, not the Docker dev database used by `product-service`.
+- `product-service` now prefers `PRODUCT_MONGODB_URI` from `D:\ecom\.env.local`. If that env var is set, Docker MongoDB is skipped entirely.
+- If `PRODUCT_MONGODB_URI` is not set, the launcher falls back to Docker MongoDB on `127.0.0.1:27018`.
+
+## Use cloud MongoDB in dev
+
+Add this to `D:\ecom\.env.local`:
+
+```env
+PRODUCT_MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>/<database>?retryWrites=true&w=majority
+```
+
+Then run:
+
+```powershell
+.\run-side-by-side.ps1 -Action restart
+```
 
 ## Start full project (bypass execution policy)
 
@@ -46,6 +60,7 @@ powershell -ExecutionPolicy Bypass -Command "& '.\run-side-by-side.ps1' -Action 
 ```
 
 The launcher passes the Spring `dev` profile explicitly for backend services. For non-dev environments, set `SPRING_PROFILES_ACTIVE=prod` in the host or container environment instead of committing an active profile to source.
+Old `build-artifacts/*.log` files are pruned automatically after `7` days. Override with `-LogRetentionDays <n>`.
 
 ## Show current status
 

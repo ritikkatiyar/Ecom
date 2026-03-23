@@ -21,8 +21,9 @@ This repository contains the Phase 2 backend microservices scaffold for Amazon L
 - `services/notification-service`
 
 ## Infra
-- `infrastructure/docker-compose.yml` supports a lighter default dev stack: MySQL, MongoDB, Kafka in single-node KRaft mode.
-- Docker MongoDB is published on host port `27018` so `product-service` does not collide with any local MongoDB already using `27017`.
+- `infrastructure/docker-compose.yml` supports a lighter default dev stack: MySQL and Kafka in single-node KRaft mode.
+- `product-service` prefers `PRODUCT_MONGODB_URI` when provided. That allows you to use MongoDB Atlas or another external Mongo deployment in dev without starting the Docker Mongo container.
+- Docker MongoDB is still available as fallback and is published on host port `27018` so `product-service` does not collide with any local MongoDB already using `27017`.
 - Optional on demand:
   - `-EnableRedis:$true` adds Redis.
   - `-EnableCheckout:$true` adds `order-service` and `payment-service`.
@@ -74,7 +75,7 @@ This starts:
 - Storefront (`3000`)
 
 ## Next implementation tasks
-1. Auth Service: JWT/refresh token flow, blacklist with Redis, OAuth2 Google login.
+1. Auth Service: JWT/refresh token flow and blacklist with Redis.
 2. Product Service: category/brand/variant model + filter/sort/pagination APIs.
 3. Inventory Service: reservation + atomic deduction + Redis lock.
 4. Order Service: saga states + outbox.

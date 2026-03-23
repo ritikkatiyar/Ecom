@@ -4,19 +4,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useFlags } from "@/context/FlagsContext";
 import { useCart } from "@/lib/hooks/useCart";
 
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, roles, logout } = useAuth();
-  const { adminConsoleEnabled } = useFlags();
   const isAdminRoute = pathname.startsWith("/admin");
   const { cart } = useCart({ enabled: !isAdminRoute });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isAdmin = roles.includes("ADMIN");
-  const showAdmin = isAdmin && adminConsoleEnabled;
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -50,7 +47,7 @@ export function Header() {
             <Link href="/search" className="hover:text-[#2badee] transition-colors">
               Search
             </Link>
-            {showAdmin && (
+            {isAdmin && (
               <Link href="/admin/dashboard" className="hover:text-[#2badee] transition-colors">
                 Admin
               </Link>

@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useFlags } from "@/context/FlagsContext";
 
 interface AdminGuardProps {
   children: ReactNode;
@@ -13,7 +12,6 @@ const ADMIN_ROLE = "ADMIN";
 
 export function AdminGuard({ children }: AdminGuardProps) {
   const { isAuthenticated, roles, isLoading } = useAuth();
-  const { adminConsoleEnabled } = useFlags();
   const pathname = usePathname();
   const isAdmin = roles.includes(ADMIN_ROLE);
 
@@ -24,10 +22,10 @@ export function AdminGuard({ children }: AdminGuardProps) {
       window.location.href = `/login${returnTo}`;
       return;
     }
-    if (!isAdmin || !adminConsoleEnabled) {
+    if (!isAdmin) {
       window.location.href = "/unauthorized";
     }
-  }, [isAuthenticated, isAdmin, adminConsoleEnabled, isLoading, pathname]);
+  }, [isAuthenticated, isAdmin, isLoading, pathname]);
 
   if (isLoading) {
     return (
@@ -37,7 +35,7 @@ export function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  if (!isAuthenticated || !isAdmin || !adminConsoleEnabled) {
+  if (!isAuthenticated || !isAdmin) {
     return null;
   }
 

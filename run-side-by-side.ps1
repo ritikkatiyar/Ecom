@@ -18,7 +18,8 @@ param(
   [string]$EnvFile = "",
   [switch]$StopInfra = $true,
   [switch]$CleanFrontendCache = $true,
-  [switch]$UseDetachedProcesses = $true
+  [switch]$UseDetachedProcesses = $true,
+  [int]$LogRetentionDays = 7
 )
 
 $ErrorActionPreference = "Stop"
@@ -71,6 +72,23 @@ function Save-ProcessMap([string]$path, [hashtable]$map) {
 
   $json = $map | ConvertTo-Json -Depth 3
   Set-Content -Path $path -Value $json
+}
+
+function Cleanup-OldLogFiles([string]$directory, [int]$retentionDays = 7) {
+  if (-not (Test-Path $directory) -or $retentionDays -lt 0) {
+    return
+  }
+
+  $cutoff = (Get-Date).AddDays(-$retentionDays)
+  Get-ChildItem -Path $directory -File -Filter *.log -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt $cutoff } |
+    ForEach-Object {
+      try {
+        Remove-Item $_.FullName -Force -ErrorAction Stop
+      } catch {
+        Write-Warning "Unable to remove old log file $($_.FullName): $($_.Exception.Message)"
+      }
+    }
 }
 
 function Test-ProcessAlive([int]$processId) {
@@ -385,7 +403,10 @@ function Invoke-PreflightChecks {
 }
 
 function Get-InfraServices {
-  $services = @("mysql", "mongodb", "kafka")
+  $services = @("mysql", "kafka")
+  if ([string]::IsNullOrWhiteSpace($env:PRODUCT_MONGODB_URI)) {
+    $services += "mongodb"
+  }
   if ($EnableRedis) {
     $services += "redis"
   }
@@ -516,6 +537,7 @@ $processMapPath = Join-Path $buildArtifactsDir "runtime-processes.json"
 if (-not (Test-Path $buildArtifactsDir)) {
   New-Item -Path $buildArtifactsDir -ItemType Directory | Out-Null
 }
+Cleanup-OldLogFiles -directory $buildArtifactsDir -retentionDays $LogRetentionDays
 
 $envFilesToLoad = @()
 if ([string]::IsNullOrWhiteSpace($EnvFile)) {
@@ -606,7 +628,11 @@ if ($StartBackend) {
     Wait-ForInfraDependency "Redis" "127.0.0.1" 6379 120
   }
   Wait-ForInfraDependency "Kafka" "127.0.0.1" 9092 150
-  Wait-ForInfraDependency "MongoDB" "127.0.0.1" 27018 120
+  if ([string]::IsNullOrWhiteSpace($env:PRODUCT_MONGODB_URI)) {
+    Wait-ForInfraDependency "MongoDB" "127.0.0.1" 27018 120
+  } else {
+    Write-Host "Using external PRODUCT_MONGODB_URI for product-service; skipping Docker MongoDB startup/wait."
+  }
   if ($EnableSearch) {
     Ensure-ElasticsearchHealthy "$backendDir/infrastructure/docker-compose.yml"
   }

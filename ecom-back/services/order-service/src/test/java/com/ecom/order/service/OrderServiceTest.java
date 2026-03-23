@@ -39,6 +39,9 @@ class OrderServiceTest {
     @Mock
     private OrderEventPublisher orderEventPublisher;
 
+    @Mock
+    private InventoryReservationClient inventoryReservationClient;
+
     private OrderService orderService;
 
     @BeforeEach
@@ -51,6 +54,7 @@ class OrderServiceTest {
                 orderItemCodec,
                 orderResponseMapper,
                 orderEventPublisher,
+                inventoryReservationClient,
                 new SimpleMeterRegistry(),
                 15);
     }
@@ -78,6 +82,7 @@ class OrderServiceTest {
 
         assertEquals("PAYMENT_PENDING", response.status());
         assertEquals(new BigDecimal("250.00"), response.totalAmount());
+        verify(inventoryReservationClient).reserve("ord_1", request.items());
     }
 
     @Test

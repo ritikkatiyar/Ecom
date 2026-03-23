@@ -11,10 +11,30 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
   tracing:
     sampling:
       probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:0.1}
   zipkin:
     tracing:
       endpoint: ${ZIPKIN_ENDPOINT:}
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

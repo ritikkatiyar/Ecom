@@ -4,9 +4,9 @@
  * - Refresh/logout read refresh token from cookie and forward to backend body.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendBaseUrl } from "@/lib/backendUrl";
 
-const BACKEND =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const BACKEND = getBackendBaseUrl();
 const REFRESH_COOKIE = "ecom_refresh_token";
 
 function toJsonSafe(text: string): Record<string, unknown> | null {
@@ -90,6 +90,12 @@ export async function POST(
     // For refresh/logout, inject refresh token from HttpOnly cookie.
     if (pathStr === "refresh" || pathStr === "logout") {
       const refreshFromCookie = request.cookies.get(REFRESH_COOKIE)?.value;
+      if (pathStr === "refresh" && !refreshFromCookie) {
+        return NextResponse.json(
+          { message: "Missing refresh token cookie" },
+          { status: 401 }
+        );
+      }
       if (refreshFromCookie) {
         const merged = { ...(bodyJson ?? {}), refreshToken: refreshFromCookie };
         requestBody = JSON.stringify(merged);

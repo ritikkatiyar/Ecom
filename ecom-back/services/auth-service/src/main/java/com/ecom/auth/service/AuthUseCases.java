@@ -9,8 +9,6 @@ public interface AuthUseCases {
 
     TokenResponse signup(SignupRequest request);
 
-    TokenResponse oauthLogin(String email);
-
     TokenResponse login(LoginRequest request);
 
     TokenResponse refresh(RefreshRequest request);

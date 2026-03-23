@@ -2,9 +2,9 @@
  * Proxy product list (GET) and create (POST) to backend.
  */
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendBaseUrl } from "@/lib/backendUrl";
 
-const BACKEND =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const BACKEND = getBackendBaseUrl();
 
 async function proxy(request: NextRequest, method: string) {
   const url = `${BACKEND}/api/products${request.nextUrl.search}`;

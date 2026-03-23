@@ -9,12 +9,13 @@
  */
 
 import type { ApiErrorPayload, ApiRequestConfig } from "./types/api";
+import { getBackendBaseUrl } from "./backendUrl";
 import { generateCorrelationId } from "./utils/uuid";
 
 const BASE_URL =
   typeof window !== "undefined"
     ? "" // Use relative URLs; Next.js rewrites /api to backend
-    : process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    : getBackendBaseUrl();
 
 const DEFAULT_HEADERS: Record<string, string> = {
   "Content-Type": "application/json",
@@ -190,7 +191,7 @@ export async function apiClient<T>(
     console.debug(`[apiClient] ${init.method ?? "GET"} ${path} correlationId=${correlationId} status=${res.status}`);
   }
 
-  if (res.status === 401 && on401Handler) {
+  if (!skipAuth && res.status === 401 && on401Handler) {
     const newToken = await on401Handler();
     if (newToken) {
       headers.set("Authorization", `Bearer ${newToken}`);

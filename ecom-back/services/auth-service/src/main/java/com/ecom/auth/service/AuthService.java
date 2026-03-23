@@ -67,19 +67,6 @@ public class AuthService implements AuthUseCases {
 
     @Override
     @Transactional
-    public TokenResponse oauthLogin(String email) {
-        UserAccount user = userRepo.findByEmail(email).orElseGet(() -> {
-            UserAccount newUser = new UserAccount();
-            newUser.setEmail(email);
-            newUser.setPasswordHash(passwordEncoder.encode(refreshTokenGenerator.nextToken()));
-            newUser.setRole("CUSTOMER");
-            return userRepo.save(newUser);
-        });
-        return authTokenIssuer.issueTokens(user);
-    }
-
-    @Override
-    @Transactional
     public TokenResponse login(LoginRequest request) {
         log.info("Login attempt received for email={}", request.email());
         UserAccount user = userRepo.findByEmail(request.email())

@@ -2,6 +2,7 @@
  * Product API - list, get, create, update, image upload.
  */
 import { ApiError, apiClient, fetchWithAuthRetry, getAccessToken } from "../apiClient";
+import { getBackendBaseUrl } from "../backendUrl";
 import { generateCorrelationId } from "../utils/uuid";
 import type { Product, ProductPage, ProductRequest } from "../types/product";
 
@@ -100,7 +101,7 @@ export async function uploadProductImages(files: File[]): Promise<string[]> {
   const BASE_URL =
     typeof window !== "undefined"
       ? ""
-      : process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+      : getBackendBaseUrl();
   const url = `${BASE_URL}/api/products/images`;
   const headers: Record<string, string> = {
     "X-API-Version": "v1",

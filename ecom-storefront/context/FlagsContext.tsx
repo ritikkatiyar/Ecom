@@ -11,7 +11,6 @@ import { getFrontendFlags, type FrontendFlags } from "@/lib/api/flags";
 
 const defaultFlags: FrontendFlags = {
   betaBannerEnabled: true,
-  adminConsoleEnabled: true,
 };
 
 const FlagsContext = createContext<FrontendFlags>(defaultFlags);

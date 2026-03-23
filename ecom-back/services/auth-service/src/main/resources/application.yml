@@ -7,18 +7,9 @@ spring:
     show-sql: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:dev-google-client-id}
-            client-secret: ${GOOGLE_CLIENT_SECRET:dev-google-client-secret}
-            scope: openid,profile,email
 
 security:
   jwt:
-    secret: change-me-to-a-very-long-random-secret-key-for-hs256
     access-token-ttl-seconds: 900
     refresh-token-ttl-days: 14
 

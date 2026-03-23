@@ -1,0 +1,28 @@
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
+ARG SERVICE_PATH
+
+WORKDIR /workspace
+
+COPY pom.xml pom.xml
+COPY common common
+COPY api-gateway api-gateway
+COPY services services
+
+RUN test -n "$SERVICE_PATH"
+RUN mvn -f "${SERVICE_PATH}/pom.xml" -DskipTests package
+RUN cp "${SERVICE_PATH}"/target/*.jar /tmp/app.jar
+
+FROM eclipse-temurin:21-jre-jammy
+
+WORKDIR /app
+
+ENV JAVA_OPTS=""
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /tmp/app.jar /app/app.jar
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

@@ -22,7 +22,10 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Backend
 
-By default, `/api/*` requests are proxied to `http://localhost:8080` (API Gateway). Override via:
+In local development, `/api/*` requests default to `http://localhost:8080` (API Gateway).
+In production, `NEXT_PUBLIC_BACKEND_URL` is required and the build will fail fast if it is missing.
+
+Configure via:
 
 ```bash
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080

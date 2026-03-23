@@ -1,3 +1,7 @@
+app:
+  frontend-flags:
+    admin-console-enabled: ${FRONTEND_FLAG_ADMIN_CONSOLE_ENABLED:true}
+
 spring:
   data:
     redis:

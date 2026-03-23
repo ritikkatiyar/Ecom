@@ -1,0 +1,382 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      NGINX_SERVER_NAME: ${NGINX_SERVER_NAME}
+    depends_on:
+      storefront:
+        condition: service_healthy
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ./ecom-back/infrastructure/nginx/nginx.prod.conf.template:/etc/nginx/templates/default.conf.template:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  storefront:
+    build:
+      context: ./ecom-storefront
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_BACKEND_URL: http://gateway:8080
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  gateway:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: api-gateway
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AUTH_SERVICE_URI: http://auth-service:8081
+      PRODUCT_SERVICE_URI: http://product-service:8083
+      INVENTORY_SERVICE_URI: http://inventory-service:8084
+      CART_SERVICE_URI: http://cart-service:8085
+      ORDER_SERVICE_URI: http://order-service:8086
+      PAYMENT_SERVICE_URI: http://payment-service:8087
+      AUTH_VALIDATE_URL: http://auth-service:8081/api/auth/validate
+      SEARCH_SERVICE_URI: http://search-service:8089
+      REVIEW_SERVICE_URI: http://review-service:8088
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      product-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      cart-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  auth-service:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/auth-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      AUTH_DB_URL: jdbc:mysql://mysql:3306/ecom_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      AUTH_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      AUTH_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET}
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8081/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  user-service:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/user-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      USER_DB_URL: jdbc:mysql://mysql:3306/ecom_user?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      USER_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      USER_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8082/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  product-service:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/product-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      PRODUCT_MONGODB_URI: mongodb://mongo:27017/ecom_product
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8083/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  inventory-service:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/inventory-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      INVENTORY_DB_URL: jdbc:mysql://mysql:3306/ecom_inventory?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      INVENTORY_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      INVENTORY_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8084/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  cart-service:
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/cart-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      CART_DB_URL: jdbc:mysql://mysql:3306/ecom_cart?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      CART_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      CART_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8085/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  order-service:
+    profiles: ["checkout"]
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/order-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      ORDER_DB_URL: jdbc:mysql://mysql:3306/ecom_order?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      ORDER_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      ORDER_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INVENTORY_SERVICE_BASE_URL: http://inventory-service:8084
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8086/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  payment-service:
+    profiles: ["checkout"]
+    build:
+      context: ./ecom-back
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_PATH: services/payment-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=25
+      PAYMENT_DB_URL: jdbc:mysql://mysql:3306/ecom_payment?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      PAYMENT_DB_USERNAME: ${MYSQL_APP_USERNAME}
+      PAYMENT_DB_PASSWORD: ${MYSQL_APP_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
+      ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:-0.0}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8087/actuator/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_APP_USERNAME}
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
+    command:
+      - --innodb-buffer-pool-size=256M
+      - --max_connections=120
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    command:
+      - --wiredTigerCacheSizeGB
+      - "0.25"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" mongodb://127.0.0.1:27017/admin | grep 1 >/dev/null || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    restart: unless-stopped
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "cub kafka-ready -b 127.0.0.1:9092 1 30"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
+  kafka_data:

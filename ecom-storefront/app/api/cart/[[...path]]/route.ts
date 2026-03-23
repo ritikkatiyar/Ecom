@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBackendBaseUrl } from "@/lib/backendUrl";
 
-const BACKEND =
-  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+const BACKEND = getBackendBaseUrl();
 
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 

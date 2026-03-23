@@ -29,6 +29,7 @@ export interface AuthContextValue extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const ACCESS_TOKEN_STORAGE_KEY = "ecom_access_token";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -37,6 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const commitAccessToken = useCallback((token: string | null) => {
     setAccessToken(token);
     setAccessTokenProvider(() => token);
+    if (typeof window === "undefined") return;
+    if (token) {
+      window.sessionStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+      return;
+    }
+    window.sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
   }, []);
 
   const roles = useMemo(() => {
@@ -111,6 +118,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const bootstrapVersion = authVersionRef.current;
+    const storedToken =
+      typeof window === "undefined"
+        ? null
+        : window.sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+
+    if (storedToken) {
+      commitAccessToken(storedToken);
+      setIsLoading(false);
+    }
+
     authApi
       .refresh()
       .then((res) => {
@@ -123,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .finally(() => {
         if (authVersionRef.current !== bootstrapVersion) return;
+        if (storedToken) return;
         setIsLoading(false);
       });
   }, [commitAccessToken]);

@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
+import { getBackendBaseUrl } from "./lib/backendUrl";
 
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
-    const backend =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+    const backend = getBackendBaseUrl();
     // Auth excluded: app/api/auth/[...path]/route.ts proxies POST correctly.
     // Gateway serves /internal/* directly (not under /api).
     const rewrites = [
