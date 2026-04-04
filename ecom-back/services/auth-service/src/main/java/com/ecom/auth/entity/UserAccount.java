@@ -31,6 +31,6 @@ public class UserAccount {
     @Column(nullable = false)
     private String role;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TINYINT(1)")
     private boolean enabled = true;
 }
