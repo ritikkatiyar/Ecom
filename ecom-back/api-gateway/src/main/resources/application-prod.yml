@@ -1,10 +1,19 @@
 spring:
   data:
     redis:
-      host: ${REDIS_HOST}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+      username: ${SPRING_DATA_REDIS_USERNAME:}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
       timeout: 2s
       connect-timeout: 2s
+
+app:
+  gateway:
+    rate-limit:
+      mode: ${RATE_LIMIT_MODE:in-memory}
 
 management:
   endpoints:

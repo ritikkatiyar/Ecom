@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,7 +19,10 @@ import com.ecom.product.service.ImageUploadService;
 
 @RestController
 @RequestMapping("/api/products")
-@ConditionalOnBean(com.ecom.product.service.ImageUploadService.class)
+@ConditionalOnExpression(
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.cloud-name:}') and " +
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.api-key:}') and " +
+        "T(org.springframework.util.StringUtils).hasText('${cloudinary.api-secret:}')")
 public class ImageUploadController {
 
     private static final Logger log = LoggerFactory.getLogger(ImageUploadController.class);
