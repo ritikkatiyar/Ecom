@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { AccountGuard } from "@/components/guards/AccountGuard";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AccountLayout({
   children,

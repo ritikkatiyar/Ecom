@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
+import { buildMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = buildMetadata({
+  title: "Collections",
+  description: "Explore curated candle collections by category and brand.",
+  path: "/collections",
+});
 
 interface GroupCard {
   label: string;

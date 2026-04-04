@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProduct } from "@/lib/api/products";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { absoluteUrl } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -19,6 +21,48 @@ function productImage(urls?: string[]): string {
     : "https://images.unsplash.com/photo-1603006905393-cb2df4e7f5f4?auto=format&fit=crop&w=1400&q=80";
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
+  try {
+    const product = await getProduct(id, { revalidateSeconds: 60 });
+    const image = productImage(product.imageUrls);
+    const description = product.description || `${product.name} by ${product.brand} in ${product.category}.`;
+
+    return {
+      title: product.name,
+      description,
+      alternates: {
+        canonical: `/products/${product.id}`,
+      },
+      openGraph: {
+        title: product.name,
+        description,
+        images: [
+          {
+            url: image,
+            alt: product.name,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: product.name,
+        description,
+        images: [image],
+      },
+    };
+  } catch {
+    return {
+      title: "Product Not Found",
+    };
+  }
+}
+
 export default async function ProductPage({
   params,
 }: {
@@ -32,9 +76,37 @@ export default async function ProductPage({
   } catch {
     notFound();
   }
+  const image = productImage(product.imageUrls);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || undefined,
+    brand: product.brand
+      ? {
+          "@type": "Brand",
+          name: product.brand,
+        }
+      : undefined,
+    category: product.category || undefined,
+    image: [image],
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "INR",
+      price: product.price,
+      availability: product.active
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      url: absoluteUrl(`/products/${product.id}`),
+    },
+  };
 
   return (
     <div className="min-h-screen bg-[#F8F6F3]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <main>
         <nav className="max-w-7xl mx-auto px-6 py-6 flex items-center gap-2 text-xs uppercase tracking-widest text-slate-400">
           <Link href="/" className="hover:text-slate-600">

@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import { AdminGuard } from "@/components/guards/AdminGuard";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AdminLayout({
   children,

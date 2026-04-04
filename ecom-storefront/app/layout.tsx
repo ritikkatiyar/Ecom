@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/context/AuthContext";
-import { FlagsProvider } from "@/context/FlagsContext";
 import { Analytics } from "@/components/Analytics";
-import { BetaBanner } from "@/components/BetaBanner";
-import { BetaOnboardingModal } from "@/components/BetaOnboardingModal";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { buildMetadata, siteName } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,10 +18,7 @@ const newsreader = Newsreader({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Anaya Candles",
-  description: "Handcrafted candles for your space",
-};
+export const metadata: Metadata = buildMetadata({ title: siteName });
 
 export default function RootLayout({
   children,
@@ -43,15 +38,11 @@ export default function RootLayout({
       >
         <Analytics />
         <QueryProvider>
-          <FlagsProvider>
-            <AuthProvider>
-              <BetaBanner />
-              <BetaOnboardingModal />
-              <Header />
-              {children}
-              <Footer />
-            </AuthProvider>
-          </FlagsProvider>
+          <AuthProvider>
+            <Header />
+            {children}
+            <Footer />
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

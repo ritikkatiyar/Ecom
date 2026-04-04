@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts } from "@/lib/api/products";
+import { absoluteUrl, buildMetadata, siteDescription, siteName } from "@/lib/seo";
 
 export const revalidate = 60;
+export const metadata: Metadata = buildMetadata({
+  title: siteName,
+  description: siteDescription,
+  path: "/",
+});
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -24,9 +31,20 @@ export default async function Home() {
   );
   const featured = page.content.filter((p) => p.active).slice(0, 4);
   const hero = featured[0];
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: siteName,
+    url: absoluteUrl("/"),
+    description: siteDescription,
+  };
 
   return (
     <main className="min-h-screen bg-[#F8F6F3]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-12 gap-14">
         <div className="lg:col-span-7">
           <div className="aspect-[4/5] bg-[#EFEBE7] rounded-xl overflow-hidden">

@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { ShopProductGrid } from "@/components/shop/ShopProductGrid";
+import { buildMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+export const metadata: Metadata = buildMetadata({
+  title: "Shop",
+  description: "Browse the full Anaya Candles catalog of handcrafted candles and home fragrances.",
+  path: "/shop",
+});
 
 export default async function ShopPage({
   searchParams,
