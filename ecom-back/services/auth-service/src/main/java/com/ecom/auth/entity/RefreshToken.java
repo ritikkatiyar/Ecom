@@ -33,6 +33,6 @@ public class RefreshToken {
     @Column(nullable = false)
     private Instant expiresAt;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TINYINT(1)")
     private boolean revoked = false;
 }
