@@ -9,8 +9,11 @@ COPY common common
 COPY api-gateway api-gateway
 COPY services services
 
-RUN test -n "$SERVICE_PATH"
-RUN mvn -f "${SERVICE_PATH}/pom.xml" -DskipTests package
+RUN test -n "$SERVICE_PATH" \
+    || (echo "SERVICE_PATH build arg is required. Example: --build-arg SERVICE_PATH=services/auth-service" >&2; exit 1)
+RUN test -f "${SERVICE_PATH}/pom.xml" \
+    || (echo "No pom.xml found at ${SERVICE_PATH}/pom.xml. Check the SERVICE_PATH build arg." >&2; exit 1)
+RUN mvn -f pom.xml -pl "${SERVICE_PATH}" -am -DskipTests package
 RUN cp "${SERVICE_PATH}"/target/*.jar /tmp/app.jar
 
 FROM eclipse-temurin:21-jre-jammy
