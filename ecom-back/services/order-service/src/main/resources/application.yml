@@ -39,7 +39,7 @@ management:
         enabled: true
 
 server:
-  port: 8086
+  port: ${PORT:8086}
 
 springdoc:
   api-docs:

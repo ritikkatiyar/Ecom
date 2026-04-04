@@ -19,7 +19,7 @@ management:
         enabled: true
 
 server:
-  port: 8088
+  port: ${PORT:8088}
 
 springdoc:
   api-docs:

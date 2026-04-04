@@ -1,6 +1,6 @@
 # Amazon Lite Phase Completion Checklist
 
-Last updated: 2026-03-08
+Last updated: 2026-03-30
 
 ## Phase 1 - System Design (HLD)
 Status: `Done`
@@ -42,7 +42,8 @@ Status: `In Progress (70%)`
 Status: `In Progress`
 - [x] Docker-based local infra and service orchestration baseline.
 - [x] CI workflows for quality/release/load calibration/drill cadence.
-- [ ] Production hosting topology finalization (ECS/EC2/etc.) pending.
+- [ ] Production hosting topology finalization pending.
+  Current direction: Vercel for frontend, MongoDB Atlas for Mongo, Supabase Postgres for relational data, Cloudflare at the edge; existing Spring Boot services still require a JVM-capable runtime unless rewritten for Workers.
 - [ ] Blue-green/runtime release controls pending.
 
 ## Phase 6 - Observability
@@ -69,4 +70,3 @@ Status: `In Progress`
 1. Execute and review scheduled release-gate drill artifacts until `check_release_gate_drill_evidence.py` passes (staging + production non-missing), then record deltas in `ecom-back/infrastructure/runbooks/DEPLOY_SMOKE_ROLLBACK.md`.
 2. Schema governance baseline is now enforced via `ecom-back/contracts/events/event-contracts.json` and `check_event_contracts.py`.
 3. ~~Wire ecom-storefront to backend APIs (products/search/cart/auth) and complete browse/search/cart flows.~~ Done: browse/search/cart/auth wired; shop Add-to-Cart; product delete; image upload UX (retry, auto-dismiss).
-

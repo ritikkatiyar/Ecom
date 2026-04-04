@@ -1,6 +1,6 @@
 # Public Beta Launch Plan
 
-Last updated: 2026-03-08
+Last updated: 2026-03-30
 
 ## Goal
 Release a public beta quickly, get real traffic, and continue hardening in parallel.
@@ -19,11 +19,14 @@ Release a public beta quickly, get real traffic, and continue hardening in paral
 3. Day 4-5
 - Public beta rollout with controlled traffic.
 - Monitor latency/error/conversion dashboards daily.
+- Host storefront on Vercel with production env vars and API base URL aligned to the public backend domain.
 
 ## Track B - Backend Hardening (Parallel)
 1. Keep release-gate drill workflow active until staged/prod evidence is healthy.
 2. Complete production receiver validation and rollback callback coverage.
 3. Tune thresholds from live traffic and keep release gates strict.
+4. Use Cloudflare as the public edge, but keep the current Spring Boot services on a JVM-capable host unless we explicitly rewrite APIs for Workers.
+5. Migrate relational-service production configuration from MySQL to Supabase Postgres before beta launch.
 
 ## Deployment Stages
 1. Internal dogfood (team only)
