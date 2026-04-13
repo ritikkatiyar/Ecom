@@ -18,7 +18,7 @@
 - Entry: API Gateway (auth, routing, rate limits)
 - Backend: Spring Boot microservices
 - Messaging: Kafka for asynchronous event-driven communication
-- Data stores: MySQL, MongoDB, Redis, Elasticsearch (polyglot persistence)
+- Data stores: MySQL, MongoDB, Redis, Solr (polyglot persistence)
 
 ## 3. Core Services and Responsibilities
 
@@ -93,7 +93,7 @@ Design constraints:
 - Order Service: MySQL
 - Payment Service: MySQL
 - Review Service: MongoDB or MySQL (start with MySQL for consistency)
-- Search Service: Elasticsearch
+- Search Service: Solr
 - Notification Service: Stateless + provider templates
 
 ## 6. API Gateway Responsibilities
@@ -186,7 +186,7 @@ Compensations:
 ## 13. Deployment Topology
 
 Local:
-- Docker Compose for services + Kafka + Redis + DBs + Elasticsearch
+- Docker Compose for services + Kafka + Redis + DBs + Solr
 
 Production:
 - Kubernetes (EKS/AKS/GKE)
@@ -217,7 +217,7 @@ Month 1 (Core)
 
 Month 2 (Scale Foundations)
 - Redis caching and idempotency
-- Elasticsearch indexing/query relevance
+- Solr indexing/query relevance
 - Dockerization and compose stack
 - Observability stack integration
 

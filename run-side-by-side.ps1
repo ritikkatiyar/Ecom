@@ -364,21 +364,21 @@ function Ensure-ServiceHealthyWithRestart(
   return $false
 }
 
-function Ensure-ElasticsearchHealthy([string]$composeFilePath) {
-  $primaryUrl = "http://127.0.0.1:9200/"
-  $healthUrl = "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s"
+function Ensure-SolrHealthy([string]$composeFilePath) {
+  $primaryUrl = "http://127.0.0.1:8983/solr/"
+  $healthUrl = "http://127.0.0.1:8983/solr/admin/info/system"
 
-  Wait-ForInfraDependency "Elasticsearch" "127.0.0.1" 9200 300
+  Wait-ForInfraDependency "Solr" "127.0.0.1" 8983 300
   try {
-    Wait-ForHttpDependency "Elasticsearch" $primaryUrl 300
-    Wait-ForHttpDependency "Elasticsearch cluster health" $healthUrl 300
+    Wait-ForHttpDependency "Solr" $primaryUrl 300
+    Wait-ForHttpDependency "Solr admin" $healthUrl 300
     return
   } catch {
-    Write-Warning "Elasticsearch accepted TCP but did not become HTTP healthy. Restarting elasticsearch container once..."
-    docker compose -f $composeFilePath restart elasticsearch | Out-Null
-    Wait-ForInfraDependency "Elasticsearch" "127.0.0.1" 9200 300
-    Wait-ForHttpDependency "Elasticsearch" $primaryUrl 300
-    Wait-ForHttpDependency "Elasticsearch cluster health" $healthUrl 300
+    Write-Warning "Solr accepted TCP but did not become HTTP healthy. Restarting solr container once..."
+    docker compose -f $composeFilePath restart solr | Out-Null
+    Wait-ForInfraDependency "Solr" "127.0.0.1" 8983 300
+    Wait-ForHttpDependency "Solr" $primaryUrl 300
+    Wait-ForHttpDependency "Solr admin" $healthUrl 300
   }
 }
 
@@ -414,7 +414,7 @@ function Get-InfraServices {
     $services += "kafka-ui"
   }
   if ($EnableSearch) {
-    $services += "elasticsearch"
+    $services += "solr"
   }
   if ($EnableObservability) {
     $services += @("zipkin", "alertmanager", "prometheus", "grafana")
@@ -592,7 +592,7 @@ if ($StartInfra) {
   Write-Host ("Infra profile: " + ($infraServices -join ", "))
   $optionalInfraServices = @()
   if (-not $EnableSearch) {
-    $optionalInfraServices += "elasticsearch"
+    $optionalInfraServices += "solr"
   }
   if (-not $EnableRedis) {
     $optionalInfraServices += "redis"
@@ -634,7 +634,7 @@ if ($StartBackend) {
     Write-Host "Using external PRODUCT_MONGODB_URI for product-service; skipping Docker MongoDB startup/wait."
   }
   if ($EnableSearch) {
-    Ensure-ElasticsearchHealthy "$backendDir/infrastructure/docker-compose.yml"
+    Ensure-SolrHealthy "$backendDir/infrastructure/docker-compose.yml"
   }
 
   $mvnCommand = Resolve-MavenCommand

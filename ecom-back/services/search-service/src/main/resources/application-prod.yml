@@ -1,12 +1,14 @@
 spring:
-  elasticsearch:
-    uris: ${ELASTICSEARCH_URIS}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 app:
   search:
     product-service-base-url: ${PRODUCT_SERVICE_BASE_URL}
+    solr:
+      base-url: ${SOLR_BASE_URL}
+      products-core: ${SOLR_PRODUCTS_CORE:products}
+      dedup-core: ${SOLR_DEDUP_CORE:search_consumed_events}
 
 management:
   endpoints:

@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.web.client.RestClient;
 
 import com.ecom.search.dto.RelevanceDatasetHealthResponse;
@@ -34,7 +33,6 @@ class SearchServiceDatasetHealthTest {
 
         SearchService service = new SearchService(
                 mock(SearchProductRepository.class),
-                mock(ElasticsearchOperations.class),
                 new ObjectMapper().findAndRegisterModules(),
                 RestClient.builder(),
                 "http://localhost:8083",
@@ -66,7 +64,6 @@ class SearchServiceDatasetHealthTest {
 
         SearchService service = new SearchService(
                 mock(SearchProductRepository.class),
-                mock(ElasticsearchOperations.class),
                 new ObjectMapper().findAndRegisterModules(),
                 RestClient.builder(),
                 "http://localhost:8083",

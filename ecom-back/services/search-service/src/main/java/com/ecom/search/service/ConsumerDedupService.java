@@ -2,7 +2,6 @@ package com.ecom.search.service;
 
 import com.ecom.common.reliability.ConsumerDedupSupport;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ecom.search.entity.ConsumedEventRecord;
 import com.ecom.search.repository.ConsumedEventRepository;
@@ -16,7 +15,6 @@ public class ConsumerDedupService {
         this.consumedEventRepository = consumedEventRepository;
     }
 
-    @Transactional
     public boolean markIfNew(String eventId) {
         return ConsumerDedupSupport.markIfNew(
                 eventId,

@@ -3,21 +3,15 @@ package com.ecom.search.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.StringQuery;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.util.UriBuilder;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriBuilder;
 
 import com.ecom.search.dto.ProductIndexRequest;
 import com.ecom.search.dto.ProductSearchPageResponse;
@@ -28,7 +22,7 @@ import com.ecom.search.dto.RelevanceEvaluationResponse;
 import com.ecom.search.dto.ReindexResponse;
 import com.ecom.search.model.SearchProductDocument;
 import com.ecom.search.repository.SearchProductRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.ecom.search.repository.SearchProductRepository.SearchPage;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,7 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SearchService implements SearchUseCases {
 
     private final SearchProductRepository repository;
-    private final ElasticsearchOperations operations;
     private final ObjectMapper objectMapper;
     private final RestClient productClient;
     private final Resource relevanceDatasetResource;
@@ -45,7 +38,6 @@ public class SearchService implements SearchUseCases {
 
     public SearchService(
             SearchProductRepository repository,
-            ElasticsearchOperations operations,
             ObjectMapper objectMapper,
             RestClient.Builder restClientBuilder,
             @Value("${app.search.product-service-base-url:http://localhost:8083}") String productServiceBaseUrl,
@@ -53,7 +45,6 @@ public class SearchService implements SearchUseCases {
             @Value("classpath:search-relevance-dataset-metadata.json") Resource relevanceDatasetMetadataResource,
             @Value("${app.search.relevance.target-pass-rate:85.0}") double targetPassRate) {
         this.repository = repository;
-        this.operations = operations;
         this.objectMapper = objectMapper;
         this.productClient = restClientBuilder.baseUrl(productServiceBaseUrl).build();
         this.relevanceDatasetResource = relevanceDatasetResource;
@@ -92,31 +83,18 @@ public class SearchService implements SearchUseCases {
             String sortBy,
             String direction) {
         validatePaging(page, size);
-        String queryDsl = buildSearchDsl(q, category, brand, activeOnly, page, size, sortBy, direction);
-        SearchHits<SearchProductDocument> hits = operations.search(new StringQuery(queryDsl), SearchProductDocument.class);
-
-        List<ProductSearchResponse> content = hits.stream()
-                .map(SearchHit::getContent)
+        SearchPage resultPage = repository.search(q, category, brand, activeOnly, page, size, sortBy, direction);
+        List<ProductSearchResponse> content = resultPage.content().stream()
                 .map(this::toResponse)
                 .toList();
 
-        return new ProductSearchPageResponse(content, hits.getTotalHits(), page, size);
+        return new ProductSearchPageResponse(content, resultPage.totalHits(), page, size);
     }
 
     @Override
     public List<String> autocomplete(String q, int size) {
-        if (q == null || q.isBlank()) {
-            return List.of();
-        }
         int safeSize = Math.max(1, Math.min(size, 20));
-        String queryDsl = buildAutocompleteDsl(q, safeSize);
-        SearchHits<SearchProductDocument> hits = operations.search(new StringQuery(queryDsl), SearchProductDocument.class);
-
-        return hits.stream()
-                .map(SearchHit::getContent)
-                .flatMap(doc -> java.util.stream.Stream.of(doc.getName(), doc.getBrand()))
-                .filter(v -> v != null && v.toLowerCase().startsWith(q.trim().toLowerCase()))
-                .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), ArrayList::new));
+        return repository.autocomplete(q, safeSize);
     }
 
     @Override
@@ -265,80 +243,6 @@ public class SearchService implements SearchUseCases {
         }
     }
 
-    private String buildSearchDsl(
-            String q,
-            String category,
-            String brand,
-            boolean activeOnly,
-            int page,
-            int size,
-            String sortBy,
-            String direction) {
-        String mustClause = (q == null || q.isBlank()) ? "{\"match_all\":{}}" : textQueryClause(q.trim());
-
-        List<String> shouldClauses = new ArrayList<>();
-        if (q != null && !q.isBlank()) {
-            shouldClauses.add("{\"match_phrase\":{\"name\":{\"query\":" + json(q.trim()) + ",\"boost\":8}}}");
-            shouldClauses.add("{\"match_phrase_prefix\":{\"name\":{\"query\":" + json(q.trim()) + ",\"boost\":5}}}");
-            shouldClauses.add("{\"match_phrase_prefix\":{\"brand\":{\"query\":" + json(q.trim()) + ",\"boost\":2}}}");
-        }
-
-        List<String> filters = new ArrayList<>();
-        if (activeOnly) {
-            filters.add("{\"term\":{\"active\":true}}");
-        }
-        if (category != null && !category.isBlank()) {
-            filters.add("{\"term\":{\"category\":" + json(category.trim()) + "}}");
-        }
-        if (brand != null && !brand.isBlank()) {
-            filters.add("{\"term\":{\"brand\":" + json(brand.trim()) + "}}");
-        }
-
-        String filterSection = filters.isEmpty() ? "" : ",\"filter\":[" + String.join(",", filters) + "]";
-        String shouldSection = shouldClauses.isEmpty() ? "" : ",\"should\":[" + String.join(",", shouldClauses) + "],\"minimum_should_match\":0";
-        String order = "desc".equalsIgnoreCase(direction) ? "desc" : "asc";
-        String sortClause = resolveSortClause(sortBy, order, q);
-
-        return "{"
-                + "\"from\":" + (page * size) + ","
-                + "\"size\":" + size + ","
-                + "\"query\":{\"bool\":{\"must\":[" + mustClause + "]" + filterSection + shouldSection + "}},"
-                + "\"sort\":[" + sortClause + "]"
-                + "}";
-    }
-
-    private String buildAutocompleteDsl(String q, int size) {
-        return "{"
-                + "\"size\":" + size + ","
-                + "\"query\":{\"bool\":{\"should\":["
-                + "{\"match_phrase_prefix\":{\"name\":{\"query\":" + json(q.trim()) + "}}},"
-                + "{\"match_phrase_prefix\":{\"brand\":{\"query\":" + json(q.trim()) + "}}}"
-                + "],\"minimum_should_match\":1}},"
-                + "\"sort\":[{\"_score\":{\"order\":\"desc\"}}]"
-                + "}";
-    }
-
-    private String resolveSortClause(String sortBy, String order, String q) {
-        if ("price".equalsIgnoreCase(sortBy)) {
-            return "{\"price\":{\"order\":\"" + order + "\"}},{\"_score\":{\"order\":\"desc\"}}";
-        }
-        if ("name".equalsIgnoreCase(sortBy)) {
-            return "{\"name.keyword\":{\"order\":\"" + order + "\"}},{\"_score\":{\"order\":\"desc\"}}";
-        }
-        if ("updatedAt".equalsIgnoreCase(sortBy)) {
-            return "{\"updatedAt\":{\"order\":\"" + order + "\"}},{\"_score\":{\"order\":\"desc\"}}";
-        }
-        if (q == null || q.isBlank()) {
-            return "{\"updatedAt\":{\"order\":\"desc\"}}";
-        }
-        return "{\"_score\":{\"order\":\"desc\"}}";
-    }
-
-    private String textQueryClause(String q) {
-        return "{\"multi_match\":{\"query\":" + json(q)
-                + ",\"fields\":[\"name^4\",\"description^2\",\"brand^2\",\"category\"],\"fuzziness\":\"AUTO\",\"operator\":\"and\"}}";
-    }
-
     private ProductPageResponse fetchProductPage(int page, int size) {
         return productClient.get()
                 .uri(uriBuilder -> buildProductPageUri(uriBuilder, page, size))
@@ -430,13 +334,5 @@ public class SearchService implements SearchUseCases {
             String version,
             Instant lastRefreshedAt,
             int refreshCadenceDays) {
-    }
-
-    private String json(String value) {
-        try {
-            return objectMapper.writeValueAsString(value);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("Could not encode query value", ex);
-        }
     }
 }

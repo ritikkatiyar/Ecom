@@ -1,12 +1,14 @@
 spring:
-  elasticsearch:
-    uris: http://127.0.0.1:9200
   kafka:
     bootstrap-servers: localhost:9092
 
 app:
   search:
     product-service-base-url: http://localhost:8083
+    solr:
+      base-url: http://127.0.0.1:8983/solr
+      products-core: products
+      dedup-core: search_consumed_events
 
 management:
   tracing:

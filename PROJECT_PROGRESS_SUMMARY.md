@@ -26,7 +26,7 @@ Generated on: 2026-03-08
 - Docker infra in `ecom-back/infrastructure/docker-compose.yml` with:
   - MySQL, MongoDB, Redis
   - Kafka + Zookeeper
-  - Elasticsearch
+  - Solr
   - Zipkin, Prometheus, Grafana
 - Shared reliability library extracted in `common/common-core` for outbox publish loop and consumer dedup support.
 

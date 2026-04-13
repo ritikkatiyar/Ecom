@@ -421,7 +421,7 @@ Last updated: 2026-03-08
 - Kafka out:
   - None.
 - Data model:
-  - `SearchProductDocument` (Elasticsearch).
+  - `SearchProductDocument` (Solr).
 - Patterns:
   - Fuzzy multi-field query.
   - Boosted ranking for exact/phrase-prefix name matches.
@@ -477,5 +477,4 @@ Last updated: 2026-03-08
 - `API_DOCS.md` added in each service folder and in `api-gateway`.
 - Rule: update corresponding `API_DOCS.md` whenever endpoint contracts, entities, stores, or async flow change.
 - Required sections validated by CI: `Endpoints`, `Entities`, `Data Stores`, `Flow`.
-
 

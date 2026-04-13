@@ -15,7 +15,7 @@ Use a VS Code terminal running as **Administrator** and launch with `ExecutionPo
 This now starts the lighter day-to-day stack by default:
 - Infra: MySQL, Kafka (KRaft mode, no ZooKeeper)
 - Apps: storefront, gateway, auth, user, product, inventory, cart
-- Not started unless requested: Redis, order, payment, review, notification, Kafka UI, Elasticsearch, `search-service`, Zipkin, Prometheus, Alertmanager, Grafana
+- Not started unless requested: Redis, order, payment, review, notification, Kafka UI, Solr, `search-service`, Zipkin, Prometheus, Alertmanager, Grafana
 
 Why this is the default:
 - The repo launches many Spring Boot services, and each Java process adds noticeable RAM pressure.

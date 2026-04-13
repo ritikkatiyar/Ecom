@@ -13,18 +13,18 @@ Base path: `/api/search`
 - `GET /admin/relevance/dataset/health` - evaluate dataset refresh cadence.
 
 ## Entities
-- `SearchProductDocument` (Elasticsearch index)
-- `ConsumedEventRecord` (Elasticsearch index)
+- `SearchProductDocument` (Solr product core)
+- `ConsumedEventRecord` (Solr dedup core)
 - Relevance dataset resources (`search-relevance-dataset*.json`)
 
 ## Data Stores
-- Elasticsearch: search documents + dedup records.
+- Solr: search documents + dedup records.
 - Kafka: consumes product indexing events.
 - Redis/MySQL: not engaged for search persistence.
 
 ## Flow
-1. Index APIs write `SearchProductDocument` into Elasticsearch.
-2. Search API builds boosted DSL query and returns ranked results.
+1. Index APIs write `SearchProductDocument` into Solr.
+2. Search API builds boosted Solr queries and returns ranked results.
 3. Reindex API pulls product pages from product service and bulk indexes.
 4. Relevance endpoints evaluate dataset pass-rate and freshness metadata.
 5. Dedup cleanup scheduler removes old consumed-event records.

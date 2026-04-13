@@ -5,7 +5,7 @@ Last updated: 2026-03-30
 ## Phase 1 - System Design (HLD)
 Status: `Done`
 - [x] Microservice boundaries defined (auth, user, product, inventory, cart, order, payment, review, search, notification).
-- [x] Core data strategy documented (MySQL, MongoDB, Redis, Elasticsearch).
+- [x] Core data strategy documented (MySQL, MongoDB, Redis, Solr).
 - [x] API gateway + async/event-driven architecture documented.
 - [x] Phase-1 HLD maintained in `architecture/PHASE1_HLD.md`.
 

@@ -30,7 +30,7 @@ This repository contains the Phase 2 backend microservices scaffold for Amazon L
   - `-EnableReviews:$true` adds `review-service`.
   - `-EnableNotifications:$true` adds `notification-service`.
   - `-EnableKafkaUi:$true` adds Kafka UI at `http://127.0.0.1:8091`.
-  - `-EnableSearch:$true` adds Elasticsearch and `search-service`.
+  - `-EnableSearch:$true` adds Solr and `search-service`.
   - `-EnableObservability:$true` adds Zipkin, Prometheus, Alertmanager, and Grafana.
 
 ## Run (local)
@@ -80,5 +80,5 @@ This starts:
 3. Inventory Service: reservation + atomic deduction + Redis lock.
 4. Order Service: saga states + outbox.
 5. Payment Service: Razorpay integration + webhooks + idempotency keys.
-6. Search Service: Elasticsearch indexing + autocomplete + fuzzy ranking.
+6. Search Service: Solr indexing + autocomplete + fuzzy ranking.
 7. Notification Service: Kafka consumers + templated email.

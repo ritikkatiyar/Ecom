@@ -14,7 +14,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Search Service API")
-                        .description("Elasticsearch-backed catalog search and autocomplete APIs")
+                        .description("Solr-backed catalog search and autocomplete APIs")
                         .version("v1"));
     }
 }
