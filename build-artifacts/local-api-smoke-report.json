@@ -1,49 +1,49 @@
 {
-  "generatedAt": "2026-03-10T13:28:28.526082+00:00",
+  "generatedAt": "2026-03-22T13:33:38.969588+00:00",
   "status": "FAIL",
-  "passed": 0,
-  "failed": 15,
+  "passed": 10,
+  "failed": 5,
   "total": 15,
   "checks": [
     {
       "name": "gateway.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8080/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8080/actuator/health, attempt=1/4"
     },
     {
       "name": "auth.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8081/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8081/actuator/health, attempt=1/4"
     },
     {
       "name": "user.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8082/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8082/actuator/health, attempt=1/4"
     },
     {
       "name": "product.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8083/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8083/actuator/health, attempt=1/4"
     },
     {
       "name": "inventory.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8084/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8084/actuator/health, attempt=1/4"
     },
     {
       "name": "cart.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8085/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8085/actuator/health, attempt=1/4"
     },
     {
       "name": "order.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8086/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8086/actuator/health, attempt=1/4"
     },
     {
       "name": "payment.health",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8087/actuator/health, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8087/actuator/health, attempt=1/4"
     },
     {
       "name": "review.health",
@@ -62,23 +62,23 @@
     },
     {
       "name": "storefront.root",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:3000, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:3000, attempt=1/4"
     },
     {
       "name": "gateway.products.list",
-      "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8080/api/products?page=0&size=1, attempt=4/4"
+      "passed": true,
+      "detail": "status=200, url=http://localhost:8080/api/products?page=0&size=1, attempt=1/4"
     },
     {
       "name": "gateway.search.dataset.health",
       "passed": false,
-      "detail": "URLError: <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>, url=http://localhost:8080/api/search/admin/relevance/dataset/health, attempt=4/4"
+      "detail": "status=503, url=http://localhost:8080/api/search/admin/relevance/dataset/health, attempt=4/4"
     },
     {
       "name": "gateway.contracts",
       "passed": false,
-      "detail": "passed=0, failed=5, total=5, exit=1"
+      "detail": "passed=4, failed=1, total=5, exit=1"
     }
   ]
 }

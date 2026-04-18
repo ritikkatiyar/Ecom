@@ -98,6 +98,13 @@ function getHeaders(skipAuth = false): Record<string, string> {
 
 async function parseErrorResponse(res: Response): Promise<{ message: string; payload: ApiErrorPayload | null }> {
   const text = await res.text();
+  const contentType = res.headers.get("Content-Type") ?? "";
+  if (contentType.includes("text/html") || /^\s*<!doctype html/i.test(text)) {
+    return {
+      message: `Upstream returned HTML instead of JSON (status ${res.status}). Check NEXT_PUBLIC_BACKEND_URL and the API gateway route.`,
+      payload: null,
+    };
+  }
   try {
     const body = JSON.parse(text);
     if (body && typeof body === "object") {
@@ -126,6 +133,39 @@ async function parseErrorResponse(res: Response): Promise<{ message: string; pay
 
 const GET_RETRY_COUNT = 2;
 const GET_RETRY_DELAY_MS = 500;
+const SERVER_FETCH_TIMEOUT_MS = 8000;
+
+function withServerTimeout(init: RequestInit): {
+  requestInit: RequestInit;
+  cleanup: () => void;
+} {
+  if (typeof window !== "undefined") {
+    return { requestInit: init, cleanup: () => {} };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SERVER_FETCH_TIMEOUT_MS);
+  const originalSignal = init.signal;
+  const abortFromOriginal = () => controller.abort();
+
+  if (originalSignal) {
+    if (originalSignal.aborted) {
+      controller.abort();
+    } else {
+      originalSignal.addEventListener("abort", abortFromOriginal, { once: true });
+    }
+  }
+
+  return {
+    requestInit: { ...init, signal: controller.signal },
+    cleanup: () => {
+      clearTimeout(timeoutId);
+      if (originalSignal) {
+        originalSignal.removeEventListener("abort", abortFromOriginal);
+      }
+    },
+  };
+}
 
 async function fetchWithRetry(
   url: string,
@@ -138,11 +178,18 @@ async function fetchWithRetry(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     let res: Response;
+    const { requestInit, cleanup } = withServerTimeout(init);
     try {
-      res = await fetch(url, init);
+      res = await fetch(url, requestInit);
     } catch (error) {
+      cleanup();
       if (!isGet || skipRetry || attempt === maxAttempts) {
-        const message = error instanceof Error ? error.message : "Network request failed";
+        const message =
+          error instanceof DOMException && error.name === "AbortError"
+            ? `Request timed out after ${SERVER_FETCH_TIMEOUT_MS}ms`
+            : error instanceof Error
+              ? error.message
+              : "Network request failed";
         throw new ApiError(
           `Backend unreachable at ${url}. ${message}`,
           null,
@@ -155,6 +202,7 @@ async function fetchWithRetry(
       await new Promise((r) => setTimeout(r, GET_RETRY_DELAY_MS));
       continue;
     }
+    cleanup();
     lastRes = res;
 
     if (res.ok) return res;

@@ -25,11 +25,18 @@ function productImage(urls?: string[]): string {
 }
 
 export default async function Home() {
-  const page = await getProducts(
-    { page: 0, size: 4, sortBy: "name", direction: "asc" },
-    { revalidateSeconds: 60 }
-  );
-  const featured = page.content.filter((p) => p.active).slice(0, 4);
+  let featured: Awaited<ReturnType<typeof getProducts>>["content"] = [];
+
+  try {
+    const page = await getProducts(
+      { page: 0, size: 4, sortBy: "name", direction: "asc" },
+      { revalidateSeconds: 60 }
+    );
+    featured = page.content.filter((p) => p.active).slice(0, 4);
+  } catch {
+    featured = [];
+  }
+
   const hero = featured[0];
   const jsonLd = {
     "@context": "https://schema.org",
